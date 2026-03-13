@@ -29,3 +29,10 @@ sources:
       - ~/notes
       - ~/Documents/tech
     extensions: [".md", ".txt"]
+
+  github:
+    enabled: true
+    token: ${GITHUB_TOKEN}
+    sync_starred: true
+    sync_gists: true
+    include_repos: []

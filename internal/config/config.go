@@ -16,6 +16,15 @@ type Config struct {
 
 type SourcesConfig struct {
 	Filesystem FilesystemConfig `yaml:"filesystem"`
+	GitHub     GitHubConfig     `yaml:"github"`
+}
+
+type GitHubConfig struct {
+	Enabled      bool     `yaml:"enabled"`
+	Token        string   `yaml:"token"`
+	SyncStarred  bool     `yaml:"sync_starred"`
+	SyncGists    bool     `yaml:"sync_gists"`
+	IncludeRepos []string `yaml:"include_repos"`
 }
 
 type FilesystemConfig struct {

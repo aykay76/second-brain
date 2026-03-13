@@ -90,6 +90,7 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `GET` | `/search?q=...&mode=semantic` | Semantic (vector-only) search |
 | `GET` | `/search?q=...&limit=10` | Limit result count (default 20) |
 | `POST` | `/ingest/filesystem` | Trigger filesystem scan and ingestion |
+| `POST` | `/ingest/github` | Trigger GitHub sync (repos, PRs, commits, stars, gists) |
 
 ### Search
 
@@ -170,6 +171,62 @@ sources:
     extensions: [".md", ".txt"]
 ```
 
+### GitHub Ingestion
+
+The `/ingest/github` endpoint syncs your personal GitHub activity into
+the knowledge base. It ingests owned repos, pull requests with comments,
+commits with file changes, starred repos, and gists.
+
+```bash
+curl -X POST http://localhost:8080/ingest/github
+```
+
+Response:
+
+```json
+{
+  "source": "github",
+  "ingested": 45,
+  "skipped": 12,
+  "errors": 0
+}
+```
+
+Features:
+
+- **Owned repos** — name, description, README content, language, topics
+- **Configurable include list** — sync additional repos (e.g. key dependencies)
+- **Pull requests** — title, description, and all comments concatenated
+- **Commits** — message, files changed with additions/deletions
+- **Starred repos** — name, description, README content
+- **Gists** — description and file contents
+- **Incremental sync** — cursor per resource type, only fetches new/updated items
+- **Cross-references** — commit messages mentioning `#N` create `REFERENCES` relationships to PRs
+- **Automatic embedding** — generates vector embeddings on ingest
+- **Rate limit handling** — respects GitHub API rate limits with automatic backoff
+- **Pagination** — follows `Link` headers to fetch all results
+
+Requires a GitHub personal access token. Set the `GITHUB_TOKEN` environment
+variable before starting the server:
+
+```bash
+export GITHUB_TOKEN=ghp_your_token_here
+```
+
+Configure in `config/config.yaml`:
+
+```yaml
+sources:
+  github:
+    enabled: true
+    token: ${GITHUB_TOKEN}
+    sync_starred: true
+    sync_gists: true
+    include_repos:
+      - golang/go
+      - kubernetes/kubernetes
+```
+
 ## Database
 
 The schema is managed via [golang-migrate](https://github.com/golang-migrate/migrate).
@@ -239,11 +296,14 @@ pa/
 │   ├── database/               # PostgreSQL connection & migrations
 │   ├── ingestion/              # Source syncers
 │   │   ├── syncer.go           # Common Syncer interface
-│   │   └── filesystem/         # Local filesystem scanner + watcher
-│   │       ├── scanner.go      # Directory walking, hashing, upsert
-│   │       ├── frontmatter.go  # YAML frontmatter parser
-│   │       ├── wikilinks.go    # Obsidian-style wikilink parser
-│   │       └── watcher.go      # fsnotify real-time file watcher
+│   │   ├── filesystem/         # Local filesystem scanner + watcher
+│   │   │   ├── scanner.go      # Directory walking, hashing, upsert
+│   │   │   ├── frontmatter.go  # YAML frontmatter parser
+│   │   │   ├── wikilinks.go    # Obsidian-style wikilink parser
+│   │   │   └── watcher.go      # fsnotify real-time file watcher
+│   │   └── github/             # Personal GitHub syncer
+│   │       ├── client.go       # HTTP client with auth, pagination, rate limiting
+│   │       └── syncer.go       # Repo, PR, commit, star, gist sync + cross-refs
 │   ├── llm/                    # LLM provider interfaces & implementations
 │   │   ├── provider.go         # EmbeddingProvider + ChatProvider interfaces
 │   │   ├── ollama.go           # Ollama implementation

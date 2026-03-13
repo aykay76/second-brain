@@ -14,6 +14,7 @@ import (
 	"pa/internal/config"
 	"pa/internal/database"
 	"pa/internal/ingestion/filesystem"
+	gh "pa/internal/ingestion/github"
 	"pa/internal/llm"
 	"pa/internal/retrieval"
 )
@@ -71,16 +72,19 @@ func main() {
 		}
 	}
 
+	ghSyncer := gh.NewSyncer(db, embeddingSvc, cfg.Sources.GitHub)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
 	mux.HandleFunc("POST /ingest/filesystem", api.IngestFilesystemHandler(fsScanner))
+	mux.HandleFunc("POST /ingest/github", api.IngestHandler(ghSyncer))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      mux,
 		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  60 * time.Second,
 	}
 
