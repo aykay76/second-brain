@@ -78,3 +78,12 @@ enrichment:
 digest:
   default_period: weekly
   week_start_day: monday
+
+insights:
+  enabled: true
+  gems_lookback_days: 90
+  serendipity_limit: 5
+  topic_window_weeks: 4
+  depth_min_artifacts: 2
+  velocity_rolling_weeks: 4
+  similarity_threshold: 0.75

@@ -41,6 +41,11 @@ and track research trends — all from the terminal.`,
 		newDiscoverCmd(),
 		newEnrichCmd(),
 		newDigestCmd(),
+		newGemsCmd(),
+		newSerendipityCmd(),
+		newTopicsCmd(),
+		newDepthCmd(),
+		newMemoriesCmd(),
 	)
 
 	return root

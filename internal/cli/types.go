@@ -159,4 +159,172 @@ type DigestResponse struct {
 	TopArtifacts    []DigestArtifact   `json:"top_artifacts"`
 	Connections     []DigestConnection `json:"connections"`
 	SourceBreakdown map[string]int     `json:"source_breakdown"`
+	Insights        *InsightsSummary   `json:"insights,omitempty"`
+}
+
+// --- Insight types ---
+
+type InsightsSummary struct {
+	Gems        *GemsInsight        `json:"gems,omitempty"`
+	Serendipity *SerendipityInsight `json:"serendipity,omitempty"`
+	Topics      *TopicsInsight      `json:"topics,omitempty"`
+	Depth       *DepthInsight       `json:"depth,omitempty"`
+	Velocity    *VelocityInsight    `json:"velocity,omitempty"`
+	Memories    *MemoriesInsight    `json:"memories,omitempty"`
+}
+
+type GemsInsight struct {
+	Count int       `json:"count"`
+	Items []GemItem `json:"items"`
+}
+
+type GemItem struct {
+	Title      string  `json:"title"`
+	Source     string  `json:"source"`
+	Similarity float64 `json:"similarity"`
+	MatchedTo  string  `json:"matched_to"`
+}
+
+type SerendipityInsight struct {
+	Count int              `json:"count"`
+	Items []SerendipityRow `json:"items"`
+}
+
+type SerendipityRow struct {
+	SourceTitle  string  `json:"source_title"`
+	SourceType   string  `json:"source_type"`
+	TargetTitle  string  `json:"target_title"`
+	TargetType   string  `json:"target_type"`
+	RelationType string  `json:"relation_type"`
+	Score        float64 `json:"score"`
+}
+
+type TopicsInsight struct {
+	Gaining []TopicItem `json:"gaining"`
+	Cooling []TopicItem `json:"cooling"`
+}
+
+type TopicItem struct {
+	Tag           string  `json:"tag"`
+	ChangePercent float64 `json:"change_percent"`
+}
+
+type DepthInsight struct {
+	Deep    []string `json:"deep"`
+	Shallow []string `json:"shallow"`
+}
+
+type VelocityInsight struct {
+	Summary string `json:"summary"`
+}
+
+type MemoriesInsight struct {
+	Periods []MemoryPeriodSummary `json:"periods"`
+}
+
+type MemoryPeriodSummary struct {
+	Label  string   `json:"label"`
+	Count  int      `json:"count"`
+	Titles []string `json:"titles"`
+}
+
+type GemsResponse struct {
+	Lookback string    `json:"lookback"`
+	Count    int       `json:"count"`
+	Gems     []GemFull `json:"gems"`
+}
+
+type GemFull struct {
+	ID           string  `json:"id"`
+	Source       string  `json:"source"`
+	ArtifactType string  `json:"artifact_type"`
+	Title        string  `json:"title"`
+	Summary      *string `json:"summary,omitempty"`
+	SourceURL    *string `json:"source_url,omitempty"`
+	IngestedAt   string  `json:"ingested_at"`
+	Similarity   float64 `json:"similarity"`
+	MatchedTo    string  `json:"matched_to"`
+}
+
+type SerendipityResponse struct {
+	Period string            `json:"period"`
+	Count  int               `json:"count"`
+	Items  []SerendipityItem `json:"items"`
+}
+
+type SerendipityItem struct {
+	SourceTitle  string  `json:"source_title"`
+	SourceType   string  `json:"source_type"`
+	TargetTitle  string  `json:"target_title"`
+	TargetType   string  `json:"target_type"`
+	RelationType string  `json:"relation_type"`
+	Confidence   float64 `json:"confidence"`
+	Score        float64 `json:"score"`
+}
+
+type TopicsResponse struct {
+	Period  string       `json:"period"`
+	Gaining []TopicFull  `json:"gaining"`
+	Cooling []TopicFull  `json:"cooling"`
+	Steady  []TopicFull  `json:"steady"`
+}
+
+type TopicFull struct {
+	Tag           string  `json:"tag"`
+	CurrentCount  int     `json:"current_count"`
+	PreviousCount int     `json:"previous_count"`
+	ChangePercent float64 `json:"change_percent"`
+	Momentum      string  `json:"momentum"`
+	SourceCount   int     `json:"source_count"`
+}
+
+type DepthResponse struct {
+	Count   int          `json:"count"`
+	Entries []DepthEntry `json:"entries"`
+}
+
+type DepthEntry struct {
+	Tag            string   `json:"tag"`
+	ArtifactCount  int      `json:"artifact_count"`
+	SourceCount    int      `json:"source_count"`
+	Sources        []string `json:"sources"`
+	DepthScore     float64  `json:"depth_score"`
+	Classification string   `json:"classification"`
+}
+
+type VelocityResponse struct {
+	Current        VelocityPeriod `json:"current"`
+	Previous       VelocityPeriod `json:"previous"`
+	RollingAverage VelocityPeriod `json:"rolling_average"`
+	ChangePercent  float64        `json:"change_percent"`
+	Summary        string         `json:"summary"`
+}
+
+type VelocityPeriod struct {
+	From     string         `json:"from"`
+	To       string         `json:"to"`
+	Total    int            `json:"total"`
+	BySource map[string]int `json:"by_source"`
+	ByType   map[string]int `json:"by_type"`
+}
+
+type MemoriesResponse struct {
+	Periods []MemoryPeriod `json:"periods"`
+}
+
+type MemoryPeriod struct {
+	Label     string           `json:"label"`
+	From      string           `json:"from"`
+	To        string           `json:"to"`
+	Count     int              `json:"count"`
+	Artifacts []MemoryArtifact `json:"artifacts"`
+}
+
+type MemoryArtifact struct {
+	ID           string  `json:"id"`
+	Source       string  `json:"source"`
+	ArtifactType string  `json:"artifact_type"`
+	Title        string  `json:"title"`
+	Summary      *string `json:"summary,omitempty"`
+	SourceURL    *string `json:"source_url,omitempty"`
 }

@@ -122,6 +122,75 @@ func printDigest(d *DigestResponse) {
 		}
 		fmt.Println()
 	}
+
+	if d.Insights != nil {
+		printDigestInsights(d.Insights)
+	}
+}
+
+func printDigestInsights(ins *InsightsSummary) {
+	if ins.Velocity != nil && ins.Velocity.Summary != "" {
+		sectionHeader("Learning Velocity")
+		fmt.Printf("    %s\n\n", ins.Velocity.Summary)
+	}
+
+	if ins.Topics != nil {
+		if len(ins.Topics.Gaining) > 0 {
+			sectionHeader("Topics Gaining Momentum")
+			for _, t := range ins.Topics.Gaining {
+				fmt.Printf("    %s %s\n",
+					green(fmt.Sprintf("+%.0f%%", t.ChangePercent)),
+					bold(t.Tag),
+				)
+			}
+			fmt.Println()
+		}
+		if len(ins.Topics.Cooling) > 0 {
+			sectionHeader("Topics Cooling Off")
+			for _, t := range ins.Topics.Cooling {
+				fmt.Printf("    %s %s\n",
+					red(fmt.Sprintf("%.0f%%", t.ChangePercent)),
+					faint(t.Tag),
+				)
+			}
+			fmt.Println()
+		}
+	}
+
+	if ins.Gems != nil && ins.Gems.Count > 0 {
+		sectionHeader("You Might Want to Revisit")
+		for _, g := range ins.Gems.Items {
+			fmt.Printf("    %s %s %s\n",
+				iconSource(g.Source),
+				truncate(g.Title, 45),
+				faint(fmt.Sprintf("→ %s", truncate(g.MatchedTo, 30))),
+			)
+		}
+		fmt.Println()
+	}
+
+	if ins.Serendipity != nil && ins.Serendipity.Count > 0 {
+		sectionHeader("Unexpected Connections")
+		for _, s := range ins.Serendipity.Items {
+			fmt.Printf("    %s ↔ %s %s\n",
+				truncate(s.SourceTitle, 30),
+				truncate(s.TargetTitle, 30),
+				faint(s.RelationType),
+			)
+		}
+		fmt.Println()
+	}
+
+	if ins.Memories != nil && len(ins.Memories.Periods) > 0 {
+		sectionHeader("Memories")
+		for _, p := range ins.Memories.Periods {
+			fmt.Printf("    %s: %s\n",
+				bold(p.Label),
+				faint(strings.Join(p.Titles, ", ")),
+			)
+		}
+		fmt.Println()
+	}
 }
 
 func formatDigestMarkdown(d *DigestResponse) string {
@@ -131,10 +200,63 @@ func formatDigestMarkdown(d *DigestResponse) string {
 	fmt.Fprintf(&b, "%s\n\n", d.Narrative)
 
 	writeMarkdownActivity(&b, d.Activity)
+
+	if d.Insights != nil {
+		writeMarkdownInsights(&b, d.Insights)
+	}
+
 	writeMarkdownArtifacts(&b, d.TopArtifacts)
 	writeMarkdownConnections(&b, d.Connections)
 
 	return b.String()
+}
+
+func writeMarkdownInsights(b *strings.Builder, ins *InsightsSummary) {
+	if ins.Velocity != nil && ins.Velocity.Summary != "" {
+		fmt.Fprintf(b, "## Learning Velocity\n\n%s\n\n", ins.Velocity.Summary)
+	}
+
+	if ins.Topics != nil && (len(ins.Topics.Gaining) > 0 || len(ins.Topics.Cooling) > 0) {
+		b.WriteString("## Topic Momentum\n\n")
+		if len(ins.Topics.Gaining) > 0 {
+			b.WriteString("**Gaining:**\n")
+			for _, t := range ins.Topics.Gaining {
+				fmt.Fprintf(b, "- %s (+%.0f%%)\n", t.Tag, t.ChangePercent)
+			}
+			b.WriteString("\n")
+		}
+		if len(ins.Topics.Cooling) > 0 {
+			b.WriteString("**Cooling:**\n")
+			for _, t := range ins.Topics.Cooling {
+				fmt.Fprintf(b, "- %s (%.0f%%)\n", t.Tag, t.ChangePercent)
+			}
+			b.WriteString("\n")
+		}
+	}
+
+	if ins.Gems != nil && ins.Gems.Count > 0 {
+		b.WriteString("## You Might Want to Revisit\n\n")
+		for _, g := range ins.Gems.Items {
+			fmt.Fprintf(b, "- **%s** (%s) — similar to: %s\n", g.Title, g.Source, g.MatchedTo)
+		}
+		b.WriteString("\n")
+	}
+
+	if ins.Serendipity != nil && ins.Serendipity.Count > 0 {
+		b.WriteString("## Unexpected Connections\n\n")
+		for _, s := range ins.Serendipity.Items {
+			fmt.Fprintf(b, "- **%s** (%s) ↔ **%s** (%s)\n",
+				s.SourceTitle, s.SourceType, s.TargetTitle, s.TargetType)
+		}
+		b.WriteString("\n")
+	}
+
+	if ins.Memories != nil && len(ins.Memories.Periods) > 0 {
+		b.WriteString("## Memories\n\n")
+		for _, p := range ins.Memories.Periods {
+			fmt.Fprintf(b, "**%s:** %s\n\n", p.Label, strings.Join(p.Titles, ", "))
+		}
+	}
 }
 
 func writeMarkdownActivity(b *strings.Builder, a DigestActivity) {

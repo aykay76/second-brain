@@ -112,6 +112,14 @@ pa digest --period daily                       Daily digest
 pa digest --natural "last 2 weeks"             Natural language time period
 pa digest --from 2025-03-01 --to 2025-03-31    Custom date range
 pa digest --output digest.md                   Save as markdown file
+pa gems                                        Resurface forgotten artifacts
+pa gems --lookback 180                         Extend lookback period
+pa serendipity                                 Most surprising connections
+pa serendipity --period monthly                Monthly serendipity
+pa topics                                      Topic momentum analysis
+pa topics --trending                           Only gaining topics
+pa depth                                       Knowledge depth map
+pa memories                                    "This time last month/year"
 ```
 
 ### Configuration
@@ -157,6 +165,12 @@ pa completion fish > ~/.config/fish/completions/pa.fish
 | `POST` | `/ingest/onedrive` | Trigger OneDrive document sync |
 | `POST` | `/discover` | Run cross-source relationship discovery |
 | `POST` | `/enrich` | Auto-tag and summarise unprocessed artifacts |
+| `GET` | `/insights/gems?lookback=90` | Forgotten gems — older artifacts similar to recent activity |
+| `GET` | `/insights/serendipity?period=weekly` | Most surprising cross-source connections |
+| `GET` | `/insights/topics?weeks=4` | Topic momentum — gaining and cooling topics |
+| `GET` | `/insights/depth` | Knowledge depth map — per-topic depth score |
+| `GET` | `/insights/velocity?period=weekly` | Learning velocity — ingestion rate vs rolling average |
+| `GET` | `/insights/memories` | "This time last month/year" memories |
 
 ### Search
 
@@ -314,6 +328,27 @@ Supported natural language expressions:
 - **Named months:** `January`, `in March 2025`, `feb`
 - **Exact dates:** `2025-06-15`, `2025-03`
 - **Before:** `before January`, `before 2025-06-01`
+
+When insights are enabled (default), the digest response includes an
+`insights` section with: learning velocity, topic momentum, forgotten gems,
+unexpected connections, knowledge depth, and memories from previous periods.
+
+### Knowledge Insights
+
+Six insight endpoints surface non-obvious patterns from your knowledge base:
+
+| Endpoint | CLI | What it does |
+|---|---|---|
+| `/insights/gems` | `pa gems` | Finds older artifacts semantically similar to recent ingestions |
+| `/insights/serendipity` | `pa serendipity` | Ranks cross-source connections by surprise score (confidence × source diversity) |
+| `/insights/topics` | `pa topics` | Compares tag frequency between current and previous period |
+| `/insights/depth` | `pa depth` | Per-topic depth: artifact count × source diversity |
+| `/insights/velocity` | `pa velocity` | Compares ingestion rate to previous period and rolling average |
+| `/insights/memories` | `pa memories` | Artifacts from the same calendar window 1, 3, 6, and 12 months ago |
+
+All insights are automatically included in digest output when data is
+available. Each insight degrades gracefully — if there's no data for a
+section, it's simply omitted.
 
 ### Filesystem Ingestion
 

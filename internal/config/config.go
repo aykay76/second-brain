@@ -15,6 +15,7 @@ type Config struct {
 	Discovery  DiscoveryConfig  `yaml:"discovery"`
 	Enrichment EnrichmentConfig `yaml:"enrichment"`
 	Digest     DigestConfig     `yaml:"digest"`
+	Insights   InsightsConfig   `yaml:"insights"`
 }
 
 type SourcesConfig struct {
@@ -42,6 +43,16 @@ type EnrichmentConfig struct {
 type DigestConfig struct {
 	DefaultPeriod string `yaml:"default_period"`
 	WeekStartDay  string `yaml:"week_start_day"`
+}
+
+type InsightsConfig struct {
+	Enabled              bool    `yaml:"enabled"`
+	GemsLookbackDays     int     `yaml:"gems_lookback_days"`
+	SerendipityLimit     int     `yaml:"serendipity_limit"`
+	TopicWindowWeeks     int     `yaml:"topic_window_weeks"`
+	DepthMinArtifacts    int     `yaml:"depth_min_artifacts"`
+	VelocityRollingWeeks int     `yaml:"velocity_rolling_weeks"`
+	SimilarityThreshold  float64 `yaml:"similarity_threshold"`
 }
 
 type GitHubConfig struct {

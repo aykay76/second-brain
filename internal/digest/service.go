@@ -19,11 +19,82 @@ type Config struct {
 	WeekStartDay  string `yaml:"week_start_day"`
 }
 
+// InsightProvider gathers insights for digest integration.
+type InsightProvider interface {
+	GatherForDigest(ctx context.Context, tr TimeRange) *InsightsSummary
+}
+
+// InsightsSummary holds all insight sections for digest embedding.
+type InsightsSummary struct {
+	Gems        *GemsInsight        `json:"gems,omitempty"`
+	Serendipity *SerendipityInsight `json:"serendipity,omitempty"`
+	Topics      *TopicsInsight      `json:"topics,omitempty"`
+	Depth       *DepthInsight       `json:"depth,omitempty"`
+	Velocity    *VelocityInsight    `json:"velocity,omitempty"`
+	Memories    *MemoriesInsight    `json:"memories,omitempty"`
+}
+
+type GemsInsight struct {
+	Count int       `json:"count"`
+	Items []GemItem `json:"items"`
+}
+
+type GemItem struct {
+	Title      string  `json:"title"`
+	Source     string  `json:"source"`
+	Similarity float64 `json:"similarity"`
+	MatchedTo  string  `json:"matched_to"`
+}
+
+type SerendipityInsight struct {
+	Count int              `json:"count"`
+	Items []SerendipityRow `json:"items"`
+}
+
+type SerendipityRow struct {
+	SourceTitle  string  `json:"source_title"`
+	SourceType   string  `json:"source_type"`
+	TargetTitle  string  `json:"target_title"`
+	TargetType   string  `json:"target_type"`
+	RelationType string  `json:"relation_type"`
+	Score        float64 `json:"score"`
+}
+
+type TopicsInsight struct {
+	Gaining []TopicItem `json:"gaining"`
+	Cooling []TopicItem `json:"cooling"`
+}
+
+type TopicItem struct {
+	Tag           string  `json:"tag"`
+	ChangePercent float64 `json:"change_percent"`
+}
+
+type DepthInsight struct {
+	Deep    []string `json:"deep"`
+	Shallow []string `json:"shallow"`
+}
+
+type VelocityInsight struct {
+	Summary string `json:"summary"`
+}
+
+type MemoriesInsight struct {
+	Periods []MemoryPeriodSummary `json:"periods"`
+}
+
+type MemoryPeriodSummary struct {
+	Label  string   `json:"label"`
+	Count  int      `json:"count"`
+	Titles []string `json:"titles"`
+}
+
 // Service generates knowledge base digests over time windows.
 type Service struct {
-	db   *sql.DB
-	chat llm.ChatProvider
-	cfg  Config
+	db       *sql.DB
+	chat     llm.ChatProvider
+	cfg      Config
+	insights InsightProvider
 }
 
 // NewService creates a digest service.
@@ -32,6 +103,11 @@ func NewService(db *sql.DB, chat llm.ChatProvider, cfg Config) *Service {
 		cfg.DefaultPeriod = PeriodWeekly
 	}
 	return &Service{db: db, chat: chat, cfg: cfg}
+}
+
+// SetInsights attaches an insight provider for digest integration.
+func (s *Service) SetInsights(ip InsightProvider) {
+	s.insights = ip
 }
 
 // DigestRequest specifies what digest to generate.
@@ -45,13 +121,14 @@ type DigestRequest struct {
 
 // DigestResponse is the full digest output.
 type DigestResponse struct {
-	TimeRange     TimeRange              `json:"time_range"`
-	Label         string                 `json:"label"`
-	Narrative     string                 `json:"narrative"`
-	Activity      ActivitySummary        `json:"activity"`
-	TopArtifacts  []DigestArtifact       `json:"top_artifacts"`
-	Connections   []DigestConnection     `json:"connections"`
-	SourceBreakdown map[string]int       `json:"source_breakdown"`
+	TimeRange       TimeRange          `json:"time_range"`
+	Label           string             `json:"label"`
+	Narrative       string             `json:"narrative"`
+	Activity        ActivitySummary    `json:"activity"`
+	TopArtifacts    []DigestArtifact   `json:"top_artifacts"`
+	Connections     []DigestConnection `json:"connections"`
+	SourceBreakdown map[string]int     `json:"source_breakdown"`
+	Insights        *InsightsSummary   `json:"insights,omitempty"`
 }
 
 // ActivitySummary holds aggregate counts.
@@ -105,7 +182,12 @@ func (s *Service) Generate(ctx context.Context, req DigestRequest) (*DigestRespo
 		return nil, fmt.Errorf("query connections: %w", err)
 	}
 
-	narrative, err := s.generateNarrative(ctx, tr, activity, topArtifacts, connections)
+	var insightData *InsightsSummary
+	if s.insights != nil {
+		insightData = s.insights.GatherForDigest(ctx, tr)
+	}
+
+	narrative, err := s.generateNarrative(ctx, tr, activity, topArtifacts, connections, insightData)
 	if err != nil {
 		slog.Warn("narrative generation failed, using fallback", "error", err)
 		narrative = s.fallbackNarrative(tr, activity)
@@ -119,6 +201,7 @@ func (s *Service) Generate(ctx context.Context, req DigestRequest) (*DigestRespo
 		TopArtifacts:    topArtifacts,
 		Connections:     connections,
 		SourceBreakdown: activity.BySource,
+		Insights:        insightData,
 	}, nil
 }
 
@@ -288,16 +371,17 @@ func (s *Service) generateNarrative(
 	activity ActivitySummary,
 	artifacts []DigestArtifact,
 	connections []DigestConnection,
+	insightData *InsightsSummary,
 ) (string, error) {
 	if s.chat == nil {
 		return s.fallbackNarrative(tr, activity), nil
 	}
 
-	context := buildNarrativeContext(tr, activity, artifacts, connections)
+	narrativeCtx := buildNarrativeContext(tr, activity, artifacts, connections, insightData)
 
 	messages := []llm.Message{
 		{Role: llm.RoleSystem, Content: digestSystemPrompt},
-		{Role: llm.RoleUser, Content: context},
+		{Role: llm.RoleUser, Content: narrativeCtx},
 	}
 
 	return s.chat.Complete(ctx, messages)
@@ -308,6 +392,7 @@ func buildNarrativeContext(
 	activity ActivitySummary,
 	artifacts []DigestArtifact,
 	connections []DigestConnection,
+	insightData *InsightsSummary,
 ) string {
 	var b strings.Builder
 
@@ -345,9 +430,67 @@ func buildNarrativeContext(
 				c.SourceTitle, c.SourceType, c.RelationType,
 				c.TargetTitle, c.TargetType, c.Confidence*100)
 		}
+		b.WriteString("\n")
+	}
+
+	if insightData != nil {
+		appendInsightContext(&b, insightData)
 	}
 
 	return b.String()
+}
+
+func appendInsightContext(b *strings.Builder, ins *InsightsSummary) {
+	if ins.Velocity != nil && ins.Velocity.Summary != "" {
+		fmt.Fprintf(b, "Learning velocity: %s\n\n", ins.Velocity.Summary)
+	}
+
+	if ins.Topics != nil {
+		if len(ins.Topics.Gaining) > 0 {
+			b.WriteString("Topics gaining momentum: ")
+			names := make([]string, 0, len(ins.Topics.Gaining))
+			for _, t := range ins.Topics.Gaining {
+				names = append(names, fmt.Sprintf("%s (+%.0f%%)", t.Tag, t.ChangePercent))
+			}
+			b.WriteString(strings.Join(names, ", "))
+			b.WriteString("\n")
+		}
+		if len(ins.Topics.Cooling) > 0 {
+			b.WriteString("Topics cooling off: ")
+			names := make([]string, 0, len(ins.Topics.Cooling))
+			for _, t := range ins.Topics.Cooling {
+				names = append(names, fmt.Sprintf("%s (%.0f%%)", t.Tag, t.ChangePercent))
+			}
+			b.WriteString(strings.Join(names, ", "))
+			b.WriteString("\n")
+		}
+		b.WriteString("\n")
+	}
+
+	if ins.Gems != nil && ins.Gems.Count > 0 {
+		b.WriteString("Forgotten gems to revisit:\n")
+		for _, g := range ins.Gems.Items {
+			fmt.Fprintf(b, "  - %s (%s) — similar to recent: %s\n", g.Title, g.Source, g.MatchedTo)
+		}
+		b.WriteString("\n")
+	}
+
+	if ins.Serendipity != nil && ins.Serendipity.Count > 0 {
+		b.WriteString("Unexpected connections:\n")
+		for _, s := range ins.Serendipity.Items {
+			fmt.Fprintf(b, "  - %s (%s) ↔ %s (%s)\n",
+				s.SourceTitle, s.SourceType, s.TargetTitle, s.TargetType)
+		}
+		b.WriteString("\n")
+	}
+
+	if ins.Memories != nil && len(ins.Memories.Periods) > 0 {
+		for _, p := range ins.Memories.Periods {
+			fmt.Fprintf(b, "%s you were working on: %s\n",
+				capitalise(p.Label), strings.Join(p.Titles, ", "))
+		}
+		b.WriteString("\n")
+	}
 }
 
 func (s *Service) fallbackNarrative(tr TimeRange, activity ActivitySummary) string {
@@ -373,6 +516,24 @@ func truncateStr(s string, max int) string {
 	return s[:max-3] + "..."
 }
 
+// BuildNarrativeContextExported is an exported wrapper for tests.
+func BuildNarrativeContextExported(
+	tr TimeRange,
+	activity ActivitySummary,
+	artifacts []DigestArtifact,
+	connections []DigestConnection,
+	insightData *InsightsSummary,
+) string {
+	return buildNarrativeContext(tr, activity, artifacts, connections, insightData)
+}
+
+func capitalise(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
 func sortedSourceKeys(m map[string]int) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
@@ -393,10 +554,77 @@ func FormatMarkdown(d *DigestResponse) string {
 	fmt.Fprintf(&b, "%s\n\n", d.Narrative)
 
 	writeActivitySection(&b, d.Activity)
+
+	if d.Insights != nil {
+		writeInsightSections(&b, d.Insights)
+	}
+
 	writeArtifactsSection(&b, d.TopArtifacts)
 	writeConnectionsSection(&b, d.Connections)
 
 	return b.String()
+}
+
+func writeInsightSections(b *strings.Builder, ins *InsightsSummary) {
+	if ins.Velocity != nil && ins.Velocity.Summary != "" {
+		fmt.Fprintf(b, "## Learning Velocity\n\n%s\n\n", ins.Velocity.Summary)
+	}
+
+	if ins.Topics != nil && (len(ins.Topics.Gaining) > 0 || len(ins.Topics.Cooling) > 0) {
+		b.WriteString("## Topic Momentum\n\n")
+		if len(ins.Topics.Gaining) > 0 {
+			b.WriteString("**Gaining:**\n")
+			for _, t := range ins.Topics.Gaining {
+				fmt.Fprintf(b, "- %s (+%.0f%%)\n", t.Tag, t.ChangePercent)
+			}
+			b.WriteString("\n")
+		}
+		if len(ins.Topics.Cooling) > 0 {
+			b.WriteString("**Cooling:**\n")
+			for _, t := range ins.Topics.Cooling {
+				fmt.Fprintf(b, "- %s (%.0f%%)\n", t.Tag, t.ChangePercent)
+			}
+			b.WriteString("\n")
+		}
+	}
+
+	if ins.Gems != nil && ins.Gems.Count > 0 {
+		b.WriteString("## You Might Want to Revisit\n\n")
+		for _, g := range ins.Gems.Items {
+			fmt.Fprintf(b, "- **%s** (%s) — similar to recent: %s\n", g.Title, g.Source, g.MatchedTo)
+		}
+		b.WriteString("\n")
+	}
+
+	if ins.Serendipity != nil && ins.Serendipity.Count > 0 {
+		b.WriteString("## Unexpected Connections\n\n")
+		for _, s := range ins.Serendipity.Items {
+			fmt.Fprintf(b, "- **%s** (%s) ↔ **%s** (%s) — %s\n",
+				s.SourceTitle, s.SourceType, s.TargetTitle, s.TargetType, s.RelationType)
+		}
+		b.WriteString("\n")
+	}
+
+	if ins.Depth != nil {
+		hasDeep := len(ins.Depth.Deep) > 0
+		hasShallow := len(ins.Depth.Shallow) > 0
+		if hasDeep || hasShallow {
+			b.WriteString("## Knowledge Depth\n\n")
+			if hasDeep {
+				fmt.Fprintf(b, "**Deep coverage:** %s\n\n", strings.Join(ins.Depth.Deep, ", "))
+			}
+			if hasShallow {
+				fmt.Fprintf(b, "**Surface-level only:** %s\n\n", strings.Join(ins.Depth.Shallow, ", "))
+			}
+		}
+	}
+
+	if ins.Memories != nil && len(ins.Memories.Periods) > 0 {
+		b.WriteString("## Memories\n\n")
+		for _, p := range ins.Memories.Periods {
+			fmt.Fprintf(b, "**%s** — %s\n\n", p.Label, strings.Join(p.Titles, ", "))
+		}
+	}
 }
 
 func writeActivitySection(b *strings.Builder, activity ActivitySummary) {

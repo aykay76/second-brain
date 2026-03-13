@@ -32,7 +32,7 @@ func TestBuildNarrativeContext(t *testing.T) {
 		},
 	}
 
-	ctx := buildNarrativeContext(tr, activity, artifacts, connections)
+	ctx := buildNarrativeContext(tr, activity, artifacts, connections, nil)
 
 	if !strings.Contains(ctx, "7 Mar 2026") {
 		t.Error("context should contain date range label")

@@ -244,6 +244,88 @@ func (c *Client) Digest(period, from, to, natural string) (*DigestResponse, erro
 	return &resp, json.Unmarshal(data, &resp)
 }
 
+// Gems retrieves forgotten gems (older artifacts similar to recent activity).
+func (c *Client) Gems(lookbackDays int) (*GemsResponse, error) {
+	q := url.Values{}
+	if lookbackDays > 0 {
+		q.Set("lookback", fmt.Sprintf("%d", lookbackDays))
+	}
+	data, err := c.get("/insights/gems", q)
+	if err != nil {
+		return nil, err
+	}
+	var resp GemsResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// Serendipity retrieves surprising cross-source connections.
+func (c *Client) Serendipity(period, natural string) (*SerendipityResponse, error) {
+	q := url.Values{}
+	if period != "" {
+		q.Set("period", period)
+	}
+	if natural != "" {
+		q.Set("natural", natural)
+	}
+	data, err := c.get("/insights/serendipity", q)
+	if err != nil {
+		return nil, err
+	}
+	var resp SerendipityResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// Topics retrieves topic momentum and drift analysis.
+func (c *Client) Topics(weeks int) (*TopicsResponse, error) {
+	q := url.Values{}
+	if weeks > 0 {
+		q.Set("weeks", fmt.Sprintf("%d", weeks))
+	}
+	data, err := c.get("/insights/topics", q)
+	if err != nil {
+		return nil, err
+	}
+	var resp TopicsResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// Depth retrieves knowledge depth analysis.
+func (c *Client) Depth() (*DepthResponse, error) {
+	data, err := c.get("/insights/depth", nil)
+	if err != nil {
+		return nil, err
+	}
+	var resp DepthResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// Velocity retrieves learning velocity metrics.
+func (c *Client) Velocity(period, natural string) (*VelocityResponse, error) {
+	q := url.Values{}
+	if period != "" {
+		q.Set("period", period)
+	}
+	if natural != "" {
+		q.Set("natural", natural)
+	}
+	data, err := c.get("/insights/velocity", q)
+	if err != nil {
+		return nil, err
+	}
+	var resp VelocityResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// Memories retrieves "this time last month/year" memories.
+func (c *Client) Memories() (*MemoriesResponse, error) {
+	data, err := c.get("/insights/memories", nil)
+	if err != nil {
+		return nil, err
+	}
+	var resp MemoriesResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
 // SearchWithTags performs a hybrid or semantic search, optionally filtered by tags.
 func (c *Client) SearchWithTags(query string, limit int, mode string, tags []string) (*SearchResponse, error) {
 	q := url.Values{"q": {query}}

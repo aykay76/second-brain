@@ -21,6 +21,7 @@ import (
 	"pa/internal/ingestion/onedrive"
 	"pa/internal/ingestion/trending"
 	"pa/internal/ingestion/youtube"
+	"pa/internal/insights"
 	"pa/internal/llm"
 	"pa/internal/retrieval"
 	"pa/internal/tagging"
@@ -98,6 +99,17 @@ func main() {
 		WeekStartDay:  cfg.Digest.WeekStartDay,
 	})
 
+	insightsSvc := insights.NewService(db, provider.Embedder, insights.Config{
+		GemsLookbackDays:     cfg.Insights.GemsLookbackDays,
+		SerendipityLimit:     cfg.Insights.SerendipityLimit,
+		TopicWindowWeeks:     cfg.Insights.TopicWindowWeeks,
+		DepthMinArtifacts:    cfg.Insights.DepthMinArtifacts,
+		VelocityRollingWeeks: cfg.Insights.VelocityRollingWeeks,
+		SimilarityThreshold:  cfg.Insights.SimilarityThreshold,
+	})
+
+	digestSvc.SetInsights(insightsSvc)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /status", api.StatusHandler(db))
@@ -115,6 +127,12 @@ func main() {
 	mux.HandleFunc("POST /discover", api.DiscoverHandler(discoveryEngine))
 	mux.HandleFunc("POST /enrich", api.EnrichHandler(enrichSvc))
 	mux.HandleFunc("GET /digest", api.DigestHandler(digestSvc))
+	mux.HandleFunc("GET /insights/gems", api.GemsHandler(insightsSvc))
+	mux.HandleFunc("GET /insights/serendipity", api.SerendipityHandler(insightsSvc))
+	mux.HandleFunc("GET /insights/topics", api.TopicsHandler(insightsSvc))
+	mux.HandleFunc("GET /insights/depth", api.DepthHandler(insightsSvc))
+	mux.HandleFunc("GET /insights/velocity", api.VelocityHandler(insightsSvc))
+	mux.HandleFunc("GET /insights/memories", api.MemoriesHandler(insightsSvc))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
