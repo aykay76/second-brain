@@ -93,6 +93,7 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `POST` | `/ingest/filesystem` | Trigger filesystem scan and ingestion |
 | `POST` | `/ingest/github` | Trigger GitHub sync (repos, PRs, commits, stars, gists) |
 | `POST` | `/ingest/arxiv` | Trigger arXiv paper sync (categories + keywords) |
+| `POST` | `/ingest/trending` | Trigger GitHub Trending scrape + sync |
 
 ### Search
 
@@ -342,6 +343,53 @@ sources:
     initial_lookback: "30d"
 ```
 
+### GitHub Trending Ingestion
+
+The `/ingest/trending` endpoint scrapes GitHub's trending page for repos
+across your configured languages and ingests them as artifacts.
+
+```bash
+curl -X POST http://localhost:8080/ingest/trending
+```
+
+Response:
+
+```json
+{
+  "source": "trending",
+  "ingested": 38,
+  "skipped": 12,
+  "errors": 0
+}
+```
+
+Features:
+
+- **HTML scraping** — uses [colly](https://github.com/gocolly/colly) to scrape github.com/trending
+- **Per-language pages** — scrapes the "all languages" page plus each configured language
+- **Deduplication** — repos appearing on multiple language pages are ingested once
+- **Content hash deduplication** — includes the sync date, so repos are refreshed daily
+- **README fetching** — optionally fetches README via GitHub API for richer embedding
+- **Topic enrichment** — fetches repo topics via GitHub API for metadata
+- **Automatic embedding** — generates vector embeddings from name + description + README
+- **IMPLEMENTS detection** — finds arXiv papers semantically similar to trending repos, or explicitly referenced by arXiv ID in descriptions
+- **SIMILAR_TOPIC detection** — finds your own GitHub repos that are topically related to trending repos via embedding similarity
+- **Rich metadata** — stores language, stars, star velocity, topics, trending date in JSONB
+
+The scraper reuses the GitHub token from the `github` source config for API
+calls (README and topic fetching). Scraping the trending page itself does not
+require authentication.
+
+Configure in `config/config.yaml`:
+
+```yaml
+sources:
+  trending:
+    enabled: true
+    languages: ["Go", "Python", "Rust", "TypeScript"]
+    fetch_readme: true
+```
+
 ## Database
 
 The schema is managed via [golang-migrate](https://github.com/golang-migrate/migrate).
@@ -419,9 +467,12 @@ pa/
 │   │   │   ├── frontmatter.go  # YAML frontmatter parser
 │   │   │   ├── wikilinks.go    # Obsidian-style wikilink parser
 │   │   │   └── watcher.go      # fsnotify real-time file watcher
-│   │   └── github/             # Personal GitHub syncer
-│   │       ├── client.go       # HTTP client with auth, pagination, rate limiting
-│   │       └── syncer.go       # Repo, PR, commit, star, gist sync + cross-refs
+│   │   ├── github/             # Personal GitHub syncer
+│   │   │   ├── client.go       # HTTP client with auth, pagination, rate limiting
+│   │   │   └── syncer.go       # Repo, PR, commit, star, gist sync + cross-refs
+│   │   └── trending/           # GitHub Trending scraper
+│   │       ├── scraper.go      # Colly HTML scraper for trending page
+│   │       └── syncer.go       # Sync, API enrichment, relationship detection
 │   ├── llm/                    # LLM provider interfaces & implementations
 │   │   ├── provider.go         # EmbeddingProvider + ChatProvider interfaces
 │   │   ├── ollama.go           # Ollama implementation

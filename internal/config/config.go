@@ -18,6 +18,7 @@ type SourcesConfig struct {
 	Filesystem FilesystemConfig `yaml:"filesystem"`
 	GitHub     GitHubConfig     `yaml:"github"`
 	ArXiv      ArXivConfig      `yaml:"arxiv"`
+	Trending   TrendingConfig   `yaml:"trending"`
 }
 
 type GitHubConfig struct {
@@ -29,11 +30,17 @@ type GitHubConfig struct {
 }
 
 type ArXivConfig struct {
-	Enabled          bool     `yaml:"enabled"`
-	Categories       []string `yaml:"categories"`
-	Keywords         []string `yaml:"keywords"`
-	MaxResults       int      `yaml:"max_results"`
-	InitialLookback  string   `yaml:"initial_lookback"`
+	Enabled         bool     `yaml:"enabled"`
+	Categories      []string `yaml:"categories"`
+	Keywords        []string `yaml:"keywords"`
+	MaxResults      int      `yaml:"max_results"`
+	InitialLookback string   `yaml:"initial_lookback"`
+}
+
+type TrendingConfig struct {
+	Enabled     bool     `yaml:"enabled"`
+	Languages   []string `yaml:"languages"`
+	FetchReadme bool     `yaml:"fetch_readme"`
 }
 
 type FilesystemConfig struct {

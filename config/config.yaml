@@ -43,3 +43,8 @@ sources:
     keywords: ["knowledge graph", "RAG", "embeddings", "LLM agents"]
     max_results: 200
     initial_lookback: "30d"
+
+  trending:
+    enabled: true
+    languages: ["Go", "Python", "Rust", "TypeScript"]
+    fetch_readme: true
