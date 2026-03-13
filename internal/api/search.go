@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"pa/internal/retrieval"
 )
@@ -26,6 +27,14 @@ func SearchHandler(svc *retrieval.SearchService) http.HandlerFunc {
 		if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 			if limit, err := strconv.Atoi(limitStr); err == nil && limit > 0 {
 				opts.Limit = limit
+			}
+		}
+
+		if tagsParam := r.URL.Query().Get("tags"); tagsParam != "" {
+			for _, t := range strings.Split(tagsParam, ",") {
+				if tag := strings.TrimSpace(t); tag != "" {
+					opts.Tags = append(opts.Tags, tag)
+				}
 			}
 		}
 

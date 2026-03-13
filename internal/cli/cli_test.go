@@ -457,7 +457,7 @@ func TestSortedKeys(t *testing.T) {
 func TestRootCmdStructure(t *testing.T) {
 	root := NewRootCmd()
 
-	expectedCmds := []string{"ask", "search", "ingest", "trending", "papers", "related", "status", "tag", "discover"}
+	expectedCmds := []string{"ask", "search", "ingest", "trending", "papers", "related", "status", "tag", "discover", "enrich"}
 	cmds := make(map[string]bool)
 	for _, c := range root.Commands() {
 		cmds[c.Name()] = true
@@ -467,5 +467,56 @@ func TestRootCmdStructure(t *testing.T) {
 		if !cmds[name] {
 			t.Errorf("root command missing subcommand %q", name)
 		}
+	}
+}
+
+func TestClientEnrich(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /enrich", jsonHandler(t, EnrichResponse{
+		Tagged:     12,
+		Summarised: 8,
+		Errors:     1,
+	}))
+	c := setupTestServer(t, mux)
+
+	resp, err := c.Enrich()
+	if err != nil {
+		t.Fatalf("Enrich() error: %v", err)
+	}
+	if resp.Tagged != 12 {
+		t.Errorf("Tagged = %d, want 12", resp.Tagged)
+	}
+	if resp.Summarised != 8 {
+		t.Errorf("Summarised = %d, want 8", resp.Summarised)
+	}
+	if resp.Errors != 1 {
+		t.Errorf("Errors = %d, want 1", resp.Errors)
+	}
+}
+
+func TestClientSearchWithTags(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /search", func(w http.ResponseWriter, r *http.Request) {
+		tags := r.URL.Query().Get("tags")
+		if tags != "architecture,database" {
+			t.Errorf("tags param = %q, want %q", tags, "architecture,database")
+		}
+		jsonHandler(t, SearchResponse{
+			Query: r.URL.Query().Get("q"),
+			Count: 2,
+			Results: []SearchResult{
+				{ID: "aaa", Title: "Result 1", Source: "filesystem", Score: 0.9},
+				{ID: "bbb", Title: "Result 2", Source: "github", Score: 0.8},
+			},
+		})(w, r)
+	})
+	c := setupTestServer(t, mux)
+
+	resp, err := c.SearchWithTags("migration patterns", 10, "", []string{"architecture", "database"})
+	if err != nil {
+		t.Fatalf("SearchWithTags() error: %v", err)
+	}
+	if resp.Count != 2 {
+		t.Errorf("Count = %d, want 2", resp.Count)
 	}
 }

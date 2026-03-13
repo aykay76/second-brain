@@ -96,6 +96,7 @@ go build -o bin/pa ./cmd/pa-cli
 pa ask "what's new in RAG research?"          Ask a question (RAG pipeline)
 pa search "event sourcing"                     Search your knowledge base
 pa search --semantic "consensus algorithms"    Semantic-only search
+pa search --tags architecture,database "..."   Filter search by tags
 pa ingest                                      Sync all sources
 pa ingest github                               Sync a specific source
 pa trending                                    Show trending repos
@@ -105,6 +106,7 @@ pa related <artifact-id>                       Show graph neighbourhood
 pa status                                      Knowledge base stats
 pa tag <artifact-id> "architecture"            Add a personal tag
 pa discover                                    Run relationship discovery
+pa enrich                                      Auto-tag and summarise artifacts
 ```
 
 ### Configuration
@@ -136,6 +138,7 @@ pa completion fish > ~/.config/fish/completions/pa.fish
 | `GET` | `/search?q=...` | Hybrid semantic + full-text search |
 | `GET` | `/search?q=...&mode=semantic` | Semantic (vector-only) search |
 | `GET` | `/search?q=...&limit=10` | Limit result count (default 20) |
+| `GET` | `/search?q=...&tags=a,b` | Filter results by tags (all must match) |
 | `GET` | `/artifacts?source=X&type=Y` | List/filter artifacts |
 | `GET` | `/artifacts/{id}/related` | Artifact graph neighbourhood |
 | `POST` | `/artifacts/{id}/tags` | Add a tag to an artifact |
@@ -147,6 +150,7 @@ pa completion fish > ~/.config/fish/completions/pa.fish
 | `POST` | `/ingest/youtube` | Trigger YouTube video + transcript sync |
 | `POST` | `/ingest/onedrive` | Trigger OneDrive document sync |
 | `POST` | `/discover` | Run cross-source relationship discovery |
+| `POST` | `/enrich` | Auto-tag and summarise unprocessed artifacts |
 
 ### Search
 
@@ -620,6 +624,55 @@ discovery:
 | `max_candidates` | `10` | Maximum neighbor candidates per artifact |
 | `batch_size` | `50` | Artifacts processed per batch in similarity scan |
 
+### Enrichment (Auto-Tagging & Summaries)
+
+The `/enrich` endpoint triggers automatic tagging and summary generation for
+artifacts that are missing them. It uses the configured chat model (Ollama or
+OpenAI) to:
+
+1. **Auto-tag** — suggest 3-5 concise topic tags per artifact
+2. **Summarise** — generate a one-paragraph summary per artifact
+
+```bash
+curl -X POST http://localhost:8080/enrich
+```
+
+Response:
+
+```json
+{
+  "tagged": 15,
+  "summarised": 12,
+  "errors": 0
+}
+```
+
+Tags are stored with `auto_generated = true` in the `tags` table. Summaries
+are written to the `summary` column on `artifacts` and appear in search
+results for quick scanning.
+
+Use the `tags` query parameter on `/search` to filter results:
+
+```bash
+curl "http://localhost:8080/search?q=patterns&tags=architecture,database"
+```
+
+This returns only artifacts that have **all** specified tags and match the query.
+
+Configure in `config/config.yaml`:
+
+```yaml
+enrichment:
+  enabled: true
+  batch_size: 20
+  max_tags: 5
+```
+
+| Setting | Default | Description |
+|---|---|---|
+| `batch_size` | `20` | Artifacts to process per enrichment run |
+| `max_tags` | `5` | Maximum auto-generated tags per artifact |
+
 ## Database
 
 The schema is managed via [golang-migrate](https://github.com/golang-migrate/migrate).
@@ -716,6 +769,7 @@ pa/
 │   │       ├── client.go       # YouTube Data API v3 client
 │   │       ├── transcript.go   # Auto-caption transcript extraction
 │   │       └── syncer.go       # Channel/search sync, relationship detection
+│   ├── tagging/                # Auto-tagging & summary generation service
 │   ├── llm/                    # LLM provider interfaces & implementations
 │   │   ├── provider.go         # EmbeddingProvider + ChatProvider interfaces
 │   │   ├── ollama.go           # Ollama implementation

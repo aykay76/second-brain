@@ -11,6 +11,7 @@ func newSearchCmd() *cobra.Command {
 	var (
 		limit    int
 		semantic bool
+		tags     []string
 	)
 
 	cmd := &cobra.Command{
@@ -19,7 +20,8 @@ func newSearchCmd() *cobra.Command {
 		Long:  `Perform a hybrid (semantic + full-text) search across all ingested artifacts.`,
 		Example: `  pa search "event sourcing"
   pa search --limit 5 "kubernetes operators"
-  pa search --semantic "distributed consensus algorithms"`,
+  pa search --semantic "distributed consensus algorithms"
+  pa search --tags architecture,database "migration patterns"`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := strings.Join(args, " ")
@@ -28,7 +30,7 @@ func newSearchCmd() *cobra.Command {
 				mode = "semantic"
 			}
 
-			resp, err := client.Search(query, limit, mode)
+			resp, err := client.SearchWithTags(query, limit, mode, tags)
 			if err != nil {
 				return fmt.Errorf("search failed: %w", err)
 			}
@@ -37,9 +39,13 @@ func newSearchCmd() *cobra.Command {
 			if semantic {
 				modeLabel = "semantic"
 			}
+			extra := ""
+			if len(tags) > 0 {
+				extra = fmt.Sprintf(", tags: %s", strings.Join(tags, ","))
+			}
 			fmt.Printf("%s %s %s\n\n",
 				faint("Search:"), bold(resp.Query),
-				faint(fmt.Sprintf("(%d results, %s)", resp.Count, modeLabel)),
+				faint(fmt.Sprintf("(%d results, %s%s)", resp.Count, modeLabel, extra)),
 			)
 
 			if resp.Count == 0 {
@@ -83,5 +89,6 @@ func newSearchCmd() *cobra.Command {
 
 	cmd.Flags().IntVarP(&limit, "limit", "n", 10, "Maximum number of results")
 	cmd.Flags().BoolVar(&semantic, "semantic", false, "Use semantic-only search (no full-text)")
+	cmd.Flags().StringSliceVar(&tags, "tags", nil, "Filter results by tags (comma-separated)")
 	return cmd
 }

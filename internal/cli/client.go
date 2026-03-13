@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -207,5 +208,35 @@ func (c *Client) Discover() (*DiscoverResponse, error) {
 		return nil, err
 	}
 	var resp DiscoverResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// Enrich triggers auto-tagging and summary generation for pending artifacts.
+func (c *Client) Enrich() (*EnrichResponse, error) {
+	data, err := c.post("/enrich", nil)
+	if err != nil {
+		return nil, err
+	}
+	var resp EnrichResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// Search performs a hybrid or semantic search, optionally filtered by tags.
+func (c *Client) SearchWithTags(query string, limit int, mode string, tags []string) (*SearchResponse, error) {
+	q := url.Values{"q": {query}}
+	if limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", limit))
+	}
+	if mode != "" {
+		q.Set("mode", mode)
+	}
+	if len(tags) > 0 {
+		q.Set("tags", strings.Join(tags, ","))
+	}
+	data, err := c.get("/search", q)
+	if err != nil {
+		return nil, err
+	}
+	var resp SearchResponse
 	return &resp, json.Unmarshal(data, &resp)
 }

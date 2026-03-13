@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `yaml:"server"`
-	DB        DBConfig        `yaml:"db"`
-	LLM       LLMConfig       `yaml:"llm"`
-	Sources   SourcesConfig   `yaml:"sources"`
-	Discovery DiscoveryConfig `yaml:"discovery"`
+	Server     ServerConfig     `yaml:"server"`
+	DB         DBConfig         `yaml:"db"`
+	LLM        LLMConfig        `yaml:"llm"`
+	Sources    SourcesConfig    `yaml:"sources"`
+	Discovery  DiscoveryConfig  `yaml:"discovery"`
+	Enrichment EnrichmentConfig `yaml:"enrichment"`
 }
 
 type SourcesConfig struct {
@@ -27,8 +28,14 @@ type SourcesConfig struct {
 type DiscoveryConfig struct {
 	Enabled             bool    `yaml:"enabled"`
 	SimilarityThreshold float64 `yaml:"similarity_threshold"`
-	MaxCandidates       int    `yaml:"max_candidates"`
-	BatchSize           int    `yaml:"batch_size"`
+	MaxCandidates       int     `yaml:"max_candidates"`
+	BatchSize           int     `yaml:"batch_size"`
+}
+
+type EnrichmentConfig struct {
+	Enabled   bool `yaml:"enabled"`
+	BatchSize int  `yaml:"batch_size"`
+	MaxTags   int  `yaml:"max_tags"`
 }
 
 type GitHubConfig struct {

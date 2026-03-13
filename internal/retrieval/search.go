@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pgvector/pgvector-go"
 
@@ -27,6 +28,7 @@ type SearchOptions struct {
 	Limit          int
 	SemanticWeight float64
 	FullTextWeight float64
+	Tags           []string
 }
 
 func DefaultSearchOptions() SearchOptions {
@@ -62,6 +64,9 @@ func (s *SearchService) Search(ctx context.Context, query string, opts SearchOpt
 		return nil, fmt.Errorf("no embedding returned for query")
 	}
 
+	if len(opts.Tags) > 0 {
+		return s.hybridSearchWithTags(ctx, embeddings[0], query, opts)
+	}
 	return s.hybridSearch(ctx, embeddings[0], query, opts)
 }
 
@@ -134,6 +139,56 @@ func (s *SearchService) hybridSearch(ctx context.Context, queryVec []float32, qu
 	`, pgvector.NewVector(queryVec), opts.Limit, queryText, opts.SemanticWeight, opts.FullTextWeight)
 	if err != nil {
 		return nil, fmt.Errorf("hybrid search query: %w", err)
+	}
+	defer rows.Close()
+
+	return scanResults(rows)
+}
+
+func (s *SearchService) hybridSearchWithTags(ctx context.Context, queryVec []float32, queryText string, opts SearchOptions) ([]SearchResult, error) {
+	tagList := "{" + strings.Join(opts.Tags, ",") + "}"
+
+	rows, err := s.db.QueryContext(ctx, `
+		WITH tag_filtered AS (
+			SELECT DISTINCT artifact_id
+			FROM tags
+			WHERE tag = ANY($6::text[])
+			GROUP BY artifact_id
+			HAVING count(DISTINCT tag) = $7
+		),
+		semantic AS (
+			SELECT a.id, 1 - (e.embedding <=> $1::vector) AS score
+			FROM artifacts a
+			JOIN artifact_embeddings e ON e.artifact_id = a.id
+			JOIN tag_filtered tf ON tf.artifact_id = a.id
+			ORDER BY e.embedding <=> $1::vector
+			LIMIT $2
+		),
+		fulltext AS (
+			SELECT a.id, ts_rank(a.tsv, websearch_to_tsquery('english', $3)) AS score
+			FROM artifacts a
+			JOIN tag_filtered tf ON tf.artifact_id = a.id
+			WHERE a.tsv @@ websearch_to_tsquery('english', $3)
+			ORDER BY score DESC
+			LIMIT $2
+		)
+		SELECT
+			a.id, a.source, a.artifact_type, a.title,
+			a.content, a.summary, a.source_url, a.metadata,
+			COALESCE(s.score, 0) * $4 + COALESCE(f.score, 0) * $5 AS combined_score
+		FROM (
+			SELECT id FROM semantic
+			UNION
+			SELECT id FROM fulltext
+		) ids
+		JOIN artifacts a ON a.id = ids.id
+		LEFT JOIN semantic s ON s.id = a.id
+		LEFT JOIN fulltext f ON f.id = a.id
+		ORDER BY combined_score DESC
+		LIMIT $2
+	`, pgvector.NewVector(queryVec), opts.Limit, queryText, opts.SemanticWeight, opts.FullTextWeight, tagList, len(opts.Tags))
+	if err != nil {
+		return nil, fmt.Errorf("hybrid search with tags: %w", err)
 	}
 	defer rows.Close()
 

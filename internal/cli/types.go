@@ -113,3 +113,9 @@ type DiscoverResponse struct {
 	TrendingResearch   int `json:"trending_research"`
 	Total              int `json:"total"`
 }
+
+type EnrichResponse struct {
+	Tagged     int `json:"tagged"`
+	Summarised int `json:"summarised"`
+	Errors     int `json:"errors"`
+}

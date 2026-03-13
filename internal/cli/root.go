@@ -39,6 +39,7 @@ and track research trends — all from the terminal.`,
 		newStatusCmd(),
 		newTagCmd(),
 		newDiscoverCmd(),
+		newEnrichCmd(),
 	)
 
 	return root

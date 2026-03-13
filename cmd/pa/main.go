@@ -22,6 +22,7 @@ import (
 	"pa/internal/ingestion/youtube"
 	"pa/internal/llm"
 	"pa/internal/retrieval"
+	"pa/internal/tagging"
 )
 
 func main() {
@@ -86,6 +87,11 @@ func main() {
 
 	discoveryEngine := discovery.NewEngine(db, cfg.Discovery)
 
+	enrichSvc := tagging.NewService(provider.Chat, db, tagging.Config{
+		BatchSize: cfg.Enrichment.BatchSize,
+		MaxTags:   cfg.Enrichment.MaxTags,
+	})
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /status", api.StatusHandler(db))
@@ -101,6 +107,7 @@ func main() {
 	mux.HandleFunc("POST /ingest/onedrive", api.IngestHandler(onedriveSyncer))
 	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
 	mux.HandleFunc("POST /discover", api.DiscoverHandler(discoveryEngine))
+	mux.HandleFunc("POST /enrich", api.EnrichHandler(enrichSvc))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),

@@ -69,3 +69,8 @@ discovery:
   similarity_threshold: 0.80
   max_candidates: 10
   batch_size: 50
+
+enrichment:
+  enabled: true
+  batch_size: 20
+  max_tags: 5
