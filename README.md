@@ -81,14 +81,64 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `llm.ollama.embedding_model` | `nomic-embed-text` | Embedding model (768d) |
 | `llm.ollama.chat_model` | `llama3.1` | Chat model for RAG/summarisation |
 
+## CLI
+
+The `pa` CLI gives you terminal access to your entire knowledge base.
+Build it with:
+
+```bash
+go build -o bin/pa ./cmd/pa-cli
+```
+
+### Commands
+
+```
+pa ask "what's new in RAG research?"          Ask a question (RAG pipeline)
+pa search "event sourcing"                     Search your knowledge base
+pa search --semantic "consensus algorithms"    Semantic-only search
+pa ingest                                      Sync all sources
+pa ingest github                               Sync a specific source
+pa trending                                    Show trending repos
+pa papers                                      Show recent arXiv papers
+pa papers --source springer                    Show Springer papers
+pa related <artifact-id>                       Show graph neighbourhood
+pa status                                      Knowledge base stats
+pa tag <artifact-id> "architecture"            Add a personal tag
+pa discover                                    Run relationship discovery
+```
+
+### Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `--server` | `http://localhost:8080` | PA server URL |
+| `PA_SERVER_URL` | `http://localhost:8080` | PA server URL (env var) |
+
+### Shell Completion
+
+```bash
+# zsh
+pa completion zsh > "${fpath[1]}/_pa"
+
+# bash
+pa completion bash > /etc/bash_completion.d/pa
+
+# fish
+pa completion fish > ~/.config/fish/completions/pa.fish
+```
+
 ## API Endpoints
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | Health check (database connectivity) |
+| `GET` | `/status` | Knowledge base statistics and sync status |
 | `GET` | `/search?q=...` | Hybrid semantic + full-text search |
 | `GET` | `/search?q=...&mode=semantic` | Semantic (vector-only) search |
 | `GET` | `/search?q=...&limit=10` | Limit result count (default 20) |
+| `GET` | `/artifacts?source=X&type=Y` | List/filter artifacts |
+| `GET` | `/artifacts/{id}/related` | Artifact graph neighbourhood |
+| `POST` | `/artifacts/{id}/tags` | Add a tag to an artifact |
 | `POST` | `/ask` | Ask a question, get a grounded answer with citations |
 | `POST` | `/ingest/filesystem` | Trigger filesystem scan and ingestion |
 | `POST` | `/ingest/github` | Trigger GitHub sync (repos, PRs, commits, stars, gists) |
@@ -593,7 +643,8 @@ podman compose up -d     # fresh start
 ### Build
 
 ```bash
-go build -o bin/pa ./cmd/pa
+go build -o bin/pa-server ./cmd/pa
+go build -o bin/pa ./cmd/pa-cli
 ```
 
 ### Run tests
@@ -632,9 +683,12 @@ llm:
 
 ```
 pa/
-├── cmd/pa/main.go              # Server entrypoint
+├── cmd/
+│   ├── pa/main.go              # Server entrypoint
+│   └── pa-cli/main.go          # CLI tool entrypoint
 ├── internal/
-│   ├── api/                    # HTTP handlers (health, search, ask, ingest, discover)
+│   ├── api/                    # HTTP handlers (health, search, ask, ingest, discover, status, artifacts)
+│   ├── cli/                    # CLI commands, HTTP client, terminal formatting
 │   ├── config/                 # Configuration loading
 │   ├── database/               # PostgreSQL connection & migrations
 │   ├── discovery/              # Cross-source relationship detection engine

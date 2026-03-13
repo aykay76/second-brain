@@ -88,7 +88,11 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
+	mux.HandleFunc("GET /status", api.StatusHandler(db))
 	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
+	mux.HandleFunc("GET /artifacts", api.ListArtifactsHandler(db))
+	mux.HandleFunc("GET /artifacts/{id}/related", api.RelatedHandler(db))
+	mux.HandleFunc("POST /artifacts/{id}/tags", api.TagHandler(db))
 	mux.HandleFunc("POST /ingest/filesystem", api.IngestFilesystemHandler(fsScanner))
 	mux.HandleFunc("POST /ingest/github", api.IngestHandler(ghSyncer))
 	mux.HandleFunc("POST /ingest/arxiv", api.IngestHandler(arxivSyncer))
