@@ -17,6 +17,7 @@ import (
 	"pa/internal/ingestion/filesystem"
 	gh "pa/internal/ingestion/github"
 	"pa/internal/ingestion/trending"
+	"pa/internal/ingestion/youtube"
 	"pa/internal/llm"
 	"pa/internal/retrieval"
 )
@@ -78,6 +79,7 @@ func main() {
 	ghSyncer := gh.NewSyncer(db, embeddingSvc, cfg.Sources.GitHub)
 	arxivSyncer := arxiv.NewSyncer(db, embeddingSvc, cfg.Sources.ArXiv)
 	trendingSyncer := trending.NewSyncer(db, embeddingSvc, cfg.Sources.Trending, cfg.Sources.GitHub.Token)
+	youtubeSyncer := youtube.NewSyncer(db, embeddingSvc, cfg.Sources.YouTube)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
@@ -86,6 +88,7 @@ func main() {
 	mux.HandleFunc("POST /ingest/github", api.IngestHandler(ghSyncer))
 	mux.HandleFunc("POST /ingest/arxiv", api.IngestHandler(arxivSyncer))
 	mux.HandleFunc("POST /ingest/trending", api.IngestHandler(trendingSyncer))
+	mux.HandleFunc("POST /ingest/youtube", api.IngestHandler(youtubeSyncer))
 	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
 
 	server := &http.Server{

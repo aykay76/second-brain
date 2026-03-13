@@ -19,6 +19,7 @@ type SourcesConfig struct {
 	GitHub     GitHubConfig     `yaml:"github"`
 	ArXiv      ArXivConfig      `yaml:"arxiv"`
 	Trending   TrendingConfig   `yaml:"trending"`
+	YouTube    YouTubeConfig    `yaml:"youtube"`
 }
 
 type GitHubConfig struct {
@@ -41,6 +42,14 @@ type TrendingConfig struct {
 	Enabled     bool     `yaml:"enabled"`
 	Languages   []string `yaml:"languages"`
 	FetchReadme bool     `yaml:"fetch_readme"`
+}
+
+type YouTubeConfig struct {
+	Enabled     bool     `yaml:"enabled"`
+	APIKey      string   `yaml:"api_key"`
+	Channels    []string `yaml:"channels"`
+	SearchTerms []string `yaml:"search_terms"`
+	MaxResults  int      `yaml:"max_results"`
 }
 
 type FilesystemConfig struct {
