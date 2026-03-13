@@ -74,3 +74,7 @@ enrichment:
   enabled: true
   batch_size: 20
   max_tags: 5
+
+digest:
+  default_period: weekly
+  week_start_day: monday

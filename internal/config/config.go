@@ -14,6 +14,7 @@ type Config struct {
 	Sources    SourcesConfig    `yaml:"sources"`
 	Discovery  DiscoveryConfig  `yaml:"discovery"`
 	Enrichment EnrichmentConfig `yaml:"enrichment"`
+	Digest     DigestConfig     `yaml:"digest"`
 }
 
 type SourcesConfig struct {
@@ -36,6 +37,11 @@ type EnrichmentConfig struct {
 	Enabled   bool `yaml:"enabled"`
 	BatchSize int  `yaml:"batch_size"`
 	MaxTags   int  `yaml:"max_tags"`
+}
+
+type DigestConfig struct {
+	DefaultPeriod string `yaml:"default_period"`
+	WeekStartDay  string `yaml:"week_start_day"`
 }
 
 type GitHubConfig struct {

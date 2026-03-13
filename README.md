@@ -107,6 +107,11 @@ pa status                                      Knowledge base stats
 pa tag <artifact-id> "architecture"            Add a personal tag
 pa discover                                    Run relationship discovery
 pa enrich                                      Auto-tag and summarise artifacts
+pa digest                                      Weekly knowledge digest
+pa digest --period daily                       Daily digest
+pa digest --natural "last 2 weeks"             Natural language time period
+pa digest --from 2025-03-01 --to 2025-03-31    Custom date range
+pa digest --output digest.md                   Save as markdown file
 ```
 
 ### Configuration
@@ -139,8 +144,9 @@ pa completion fish > ~/.config/fish/completions/pa.fish
 | `GET` | `/search?q=...&mode=semantic` | Semantic (vector-only) search |
 | `GET` | `/search?q=...&limit=10` | Limit result count (default 20) |
 | `GET` | `/search?q=...&tags=a,b` | Filter results by tags (all must match) |
-| `GET` | `/artifacts?source=X&type=Y` | List/filter artifacts |
+| `GET` | `/artifacts?source=X&type=Y&from=&to=` | List/filter artifacts (with optional date range) |
 | `GET` | `/artifacts/{id}/related` | Artifact graph neighbourhood |
+| `GET` | `/digest?period=weekly` | Generate knowledge digest for a time period |
 | `POST` | `/artifacts/{id}/tags` | Add a tag to an artifact |
 | `POST` | `/ask` | Ask a question, get a grounded answer with citations |
 | `POST` | `/ingest/filesystem` | Trigger filesystem scan and ingestion |
@@ -255,6 +261,59 @@ Parameters:
 The system prompt instructs the model to answer only from provided context
 and cite sources using `[N]` notation. Sources marked `"cited": true` were
 explicitly referenced in the answer.
+
+### Digest
+
+The `/digest` endpoint generates a summary of everything ingested,
+connections discovered, and activity across your knowledge base for a
+given time period. It supports natural language date expressions.
+
+```bash
+# Weekly digest (default)
+curl "http://localhost:8080/digest"
+
+# Daily digest
+curl "http://localhost:8080/digest?period=daily"
+
+# Custom date range
+curl "http://localhost:8080/digest?from=2025-03-01&to=2025-03-31"
+
+# Natural language
+curl "http://localhost:8080/digest?natural=last+2+weeks"
+```
+
+Response:
+
+```json
+{
+  "time_range": {"from": "2026-03-07T00:00:00Z", "to": "2026-03-14T00:00:00Z"},
+  "label": "7 Mar 2026 – 13 Mar 2026",
+  "narrative": "This was a productive week focused on...",
+  "activity": {
+    "total_ingested": 25,
+    "by_source": {"github": 12, "arxiv": 8, "filesystem": 5},
+    "new_relationships": 4
+  },
+  "top_artifacts": [...],
+  "connections": [...]
+}
+```
+
+Parameters:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `period` | string | `weekly` | `daily`, `weekly`, or `monthly` |
+| `from` | string | | Start date (YYYY-MM-DD) |
+| `to` | string | | End date (YYYY-MM-DD) |
+| `natural` | string | | Natural language period (e.g. "last 2 weeks", "in March") |
+
+Supported natural language expressions:
+- **Relative:** `today`, `yesterday`, `this week`, `last week`, `this month`, `last month`, `this year`, `last year`
+- **Durations:** `past 3 days`, `last 2 weeks`, `past 6 months`, `last 1 year`
+- **Named months:** `January`, `in March 2025`, `feb`
+- **Exact dates:** `2025-06-15`, `2025-03`
+- **Before:** `before January`, `before 2025-06-01`
 
 ### Filesystem Ingestion
 

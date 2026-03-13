@@ -13,6 +13,7 @@ import (
 	"pa/internal/api"
 	"pa/internal/config"
 	"pa/internal/database"
+	"pa/internal/digest"
 	"pa/internal/discovery"
 	"pa/internal/ingestion/arxiv"
 	"pa/internal/ingestion/filesystem"
@@ -92,6 +93,11 @@ func main() {
 		MaxTags:   cfg.Enrichment.MaxTags,
 	})
 
+	digestSvc := digest.NewService(db, provider.Chat, digest.Config{
+		DefaultPeriod: digest.Period(cfg.Digest.DefaultPeriod),
+		WeekStartDay:  cfg.Digest.WeekStartDay,
+	})
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /status", api.StatusHandler(db))
@@ -108,6 +114,7 @@ func main() {
 	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
 	mux.HandleFunc("POST /discover", api.DiscoverHandler(discoveryEngine))
 	mux.HandleFunc("POST /enrich", api.EnrichHandler(enrichSvc))
+	mux.HandleFunc("GET /digest", api.DigestHandler(digestSvc))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),

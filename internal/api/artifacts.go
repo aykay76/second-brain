@@ -31,6 +31,8 @@ type artifactListResponse struct {
 type artifactFilter struct {
 	source       string
 	artifactType string
+	from         string
+	to           string
 	limit        int
 	orderBy      string
 }
@@ -39,6 +41,8 @@ func parseArtifactFilter(r *http.Request) artifactFilter {
 	f := artifactFilter{
 		source:       r.URL.Query().Get("source"),
 		artifactType: r.URL.Query().Get("type"),
+		from:         r.URL.Query().Get("from"),
+		to:           r.URL.Query().Get("to"),
 		limit:        20,
 		orderBy:      "ingested_at DESC",
 	}
@@ -70,6 +74,16 @@ func (f artifactFilter) buildQuery() (string, []any) {
 	if f.artifactType != "" {
 		conditions = append(conditions, fmt.Sprintf("artifact_type = $%d", argIdx))
 		args = append(args, f.artifactType)
+		argIdx++
+	}
+	if f.from != "" {
+		conditions = append(conditions, fmt.Sprintf("ingested_at >= $%d", argIdx))
+		args = append(args, f.from)
+		argIdx++
+	}
+	if f.to != "" {
+		conditions = append(conditions, fmt.Sprintf("ingested_at < $%d", argIdx))
+		args = append(args, f.to)
 		argIdx++
 	}
 

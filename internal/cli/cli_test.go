@@ -457,7 +457,7 @@ func TestSortedKeys(t *testing.T) {
 func TestRootCmdStructure(t *testing.T) {
 	root := NewRootCmd()
 
-	expectedCmds := []string{"ask", "search", "ingest", "trending", "papers", "related", "status", "tag", "discover", "enrich"}
+	expectedCmds := []string{"ask", "search", "ingest", "trending", "papers", "related", "status", "tag", "discover", "enrich", "digest"}
 	cmds := make(map[string]bool)
 	for _, c := range root.Commands() {
 		cmds[c.Name()] = true
@@ -491,6 +491,118 @@ func TestClientEnrich(t *testing.T) {
 	}
 	if resp.Errors != 1 {
 		t.Errorf("Errors = %d, want 1", resp.Errors)
+	}
+}
+
+func TestClientDigest(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /digest", func(w http.ResponseWriter, r *http.Request) {
+		period := r.URL.Query().Get("period")
+		if period == "" {
+			period = "weekly"
+		}
+		jsonHandler(t, DigestResponse{
+			TimeRange: DigestTimeRange{
+				From: "2026-03-07T00:00:00Z",
+				To:   "2026-03-14T00:00:00Z",
+			},
+			Label:     "7 Mar 2026 – 13 Mar 2026",
+			Narrative: "A productive week exploring transformers research and Go tooling.",
+			Activity: DigestActivity{
+				TotalIngested:    25,
+				BySource:         map[string]int{"github": 12, "arxiv": 8, "filesystem": 5},
+				ByType:           map[string]int{"repo": 12, "paper": 8, "document": 5},
+				NewRelationships: 4,
+			},
+			TopArtifacts: []DigestArtifact{
+				{ID: "a1", Source: "arxiv", ArtifactType: "paper", Title: "Attention Mechanisms"},
+			},
+			Connections: []DigestConnection{
+				{
+					SourceTitle: "Attention Paper", SourceType: "arxiv",
+					TargetTitle: "transformer-go", TargetType: "github",
+					RelationType: "IMPLEMENTS", Confidence: 0.9,
+				},
+			},
+			SourceBreakdown: map[string]int{"github": 12, "arxiv": 8, "filesystem": 5},
+		})(w, r)
+	})
+	c := setupTestServer(t, mux)
+
+	resp, err := c.Digest("weekly", "", "", "")
+	if err != nil {
+		t.Fatalf("Digest() error: %v", err)
+	}
+	if resp.Activity.TotalIngested != 25 {
+		t.Errorf("TotalIngested = %d, want 25", resp.Activity.TotalIngested)
+	}
+	if resp.Label != "7 Mar 2026 – 13 Mar 2026" {
+		t.Errorf("Label = %q, want %q", resp.Label, "7 Mar 2026 – 13 Mar 2026")
+	}
+	if len(resp.TopArtifacts) != 1 {
+		t.Errorf("TopArtifacts count = %d, want 1", len(resp.TopArtifacts))
+	}
+	if len(resp.Connections) != 1 {
+		t.Errorf("Connections count = %d, want 1", len(resp.Connections))
+	}
+	if resp.Connections[0].RelationType != "IMPLEMENTS" {
+		t.Errorf("RelationType = %q, want %q", resp.Connections[0].RelationType, "IMPLEMENTS")
+	}
+}
+
+func TestClientDigestWithNatural(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /digest", func(w http.ResponseWriter, r *http.Request) {
+		natural := r.URL.Query().Get("natural")
+		if natural != "last month" {
+			t.Errorf("natural param = %q, want %q", natural, "last month")
+		}
+		jsonHandler(t, DigestResponse{
+			Label: "1 Feb 2026 – 28 Feb 2026",
+			Activity: DigestActivity{
+				TotalIngested: 50,
+				BySource:      map[string]int{"github": 30, "arxiv": 20},
+			},
+		})(w, r)
+	})
+	c := setupTestServer(t, mux)
+
+	resp, err := c.Digest("", "", "", "last month")
+	if err != nil {
+		t.Fatalf("Digest() error: %v", err)
+	}
+	if resp.Activity.TotalIngested != 50 {
+		t.Errorf("TotalIngested = %d, want 50", resp.Activity.TotalIngested)
+	}
+}
+
+func TestClientDigestWithDateRange(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /digest", func(w http.ResponseWriter, r *http.Request) {
+		from := r.URL.Query().Get("from")
+		to := r.URL.Query().Get("to")
+		if from != "2025-01-01" {
+			t.Errorf("from = %q, want %q", from, "2025-01-01")
+		}
+		if to != "2025-12-31" {
+			t.Errorf("to = %q, want %q", to, "2025-12-31")
+		}
+		jsonHandler(t, DigestResponse{
+			Label: "1 Jan 2025 – 31 Dec 2025",
+			Activity: DigestActivity{
+				TotalIngested: 200,
+				BySource:      map[string]int{},
+			},
+		})(w, r)
+	})
+	c := setupTestServer(t, mux)
+
+	resp, err := c.Digest("", "2025-01-01", "2025-12-31", "")
+	if err != nil {
+		t.Fatalf("Digest() error: %v", err)
+	}
+	if resp.Activity.TotalIngested != 200 {
+		t.Errorf("TotalIngested = %d, want 200", resp.Activity.TotalIngested)
 	}
 }
 

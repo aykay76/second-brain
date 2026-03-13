@@ -221,7 +221,30 @@ func (c *Client) Enrich() (*EnrichResponse, error) {
 	return &resp, json.Unmarshal(data, &resp)
 }
 
-// Search performs a hybrid or semantic search, optionally filtered by tags.
+// Digest generates a knowledge base digest for a time period.
+func (c *Client) Digest(period, from, to, natural string) (*DigestResponse, error) {
+	q := url.Values{}
+	if period != "" {
+		q.Set("period", period)
+	}
+	if from != "" {
+		q.Set("from", from)
+	}
+	if to != "" {
+		q.Set("to", to)
+	}
+	if natural != "" {
+		q.Set("natural", natural)
+	}
+	data, err := c.get("/digest", q)
+	if err != nil {
+		return nil, err
+	}
+	var resp DigestResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// SearchWithTags performs a hybrid or semantic search, optionally filtered by tags.
 func (c *Client) SearchWithTags(query string, limit int, mode string, tags []string) (*SearchResponse, error) {
 	q := url.Values{"q": {query}}
 	if limit > 0 {

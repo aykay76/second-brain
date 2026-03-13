@@ -119,3 +119,44 @@ type EnrichResponse struct {
 	Summarised int `json:"summarised"`
 	Errors     int `json:"errors"`
 }
+
+type DigestTimeRange struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+}
+
+type DigestActivity struct {
+	TotalIngested    int            `json:"total_ingested"`
+	BySource         map[string]int `json:"by_source"`
+	ByType           map[string]int `json:"by_type"`
+	NewRelationships int            `json:"new_relationships"`
+}
+
+type DigestArtifact struct {
+	ID           string  `json:"id"`
+	Source       string  `json:"source"`
+	ArtifactType string  `json:"artifact_type"`
+	Title        string  `json:"title"`
+	Summary      *string `json:"summary,omitempty"`
+	SourceURL    *string `json:"source_url,omitempty"`
+	IngestedAt   string  `json:"ingested_at"`
+}
+
+type DigestConnection struct {
+	SourceTitle  string  `json:"source_title"`
+	SourceType   string  `json:"source_type"`
+	TargetTitle  string  `json:"target_title"`
+	TargetType   string  `json:"target_type"`
+	RelationType string  `json:"relation_type"`
+	Confidence   float64 `json:"confidence"`
+}
+
+type DigestResponse struct {
+	TimeRange       DigestTimeRange    `json:"time_range"`
+	Label           string             `json:"label"`
+	Narrative       string             `json:"narrative"`
+	Activity        DigestActivity     `json:"activity"`
+	TopArtifacts    []DigestArtifact   `json:"top_artifacts"`
+	Connections     []DigestConnection `json:"connections"`
+	SourceBreakdown map[string]int     `json:"source_breakdown"`
+}
