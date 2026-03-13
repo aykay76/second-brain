@@ -26,19 +26,18 @@ sources:
   filesystem:
     enabled: true
     paths:
-      - ~/notes
-      - ~/Documents/tech
+      - d:/
     extensions: [".md", ".txt"]
 
   github:
-    enabled: true
+    enabled: false
     token: ${GITHUB_TOKEN}
     sync_starred: true
     sync_gists: true
     include_repos: []
 
   arxiv:
-    enabled: true
+    enabled: false
     categories: ["cs.AI", "cs.SE", "cs.DC", "cs.CR"]
     keywords: ["knowledge graph", "RAG", "embeddings", "LLM agents"]
     max_results: 200
