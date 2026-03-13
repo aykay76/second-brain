@@ -21,3 +21,11 @@ llm:
     api_key: ${OPENAI_API_KEY}
     embedding_model: text-embedding-3-small
     chat_model: gpt-4o
+
+sources:
+  filesystem:
+    enabled: true
+    paths:
+      - ~/notes
+      - ~/Documents/tech
+    extensions: [".md", ".txt"]

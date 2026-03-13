@@ -8,9 +8,20 @@ import (
 )
 
 type Config struct {
-	Server ServerConfig `yaml:"server"`
-	DB     DBConfig     `yaml:"db"`
-	LLM    LLMConfig    `yaml:"llm"`
+	Server  ServerConfig  `yaml:"server"`
+	DB      DBConfig      `yaml:"db"`
+	LLM     LLMConfig     `yaml:"llm"`
+	Sources SourcesConfig `yaml:"sources"`
+}
+
+type SourcesConfig struct {
+	Filesystem FilesystemConfig `yaml:"filesystem"`
+}
+
+type FilesystemConfig struct {
+	Enabled    bool     `yaml:"enabled"`
+	Paths      []string `yaml:"paths"`
+	Extensions []string `yaml:"extensions"`
 }
 
 type ServerConfig struct {

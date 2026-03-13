@@ -89,6 +89,7 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `GET` | `/search?q=...` | Hybrid semantic + full-text search |
 | `GET` | `/search?q=...&mode=semantic` | Semantic (vector-only) search |
 | `GET` | `/search?q=...&limit=10` | Limit result count (default 20) |
+| `POST` | `/ingest/filesystem` | Trigger filesystem scan and ingestion |
 
 ### Search
 
@@ -124,6 +125,49 @@ Response:
     }
   ]
 }
+```
+
+### Filesystem Ingestion
+
+The `/ingest/filesystem` endpoint scans all configured directories for
+matching files and ingests them as artifacts. Files are deduplicated by
+content hash — unchanged files are skipped on subsequent syncs.
+
+```bash
+curl -X POST http://localhost:8080/ingest/filesystem
+```
+
+Response:
+
+```json
+{
+  "source": "filesystem",
+  "ingested": 12,
+  "skipped": 3,
+  "errors": 0
+}
+```
+
+Features:
+
+- **Recursive scanning** of configured directories
+- **Extension filtering** (default: `.md`, `.txt`)
+- **Content hash deduplication** — skips unchanged files via SHA-256
+- **Markdown frontmatter parsing** — YAML frontmatter extracted into metadata
+- **Wikilink resolution** — Obsidian-style `[[page]]` links create `LINKS_TO` relationships
+- **Real-time updates** — `fsnotify` file watcher processes changes as they happen
+- **Automatic embedding** — generates vector embeddings on ingest
+
+Configure watched directories in `config/config.yaml`:
+
+```yaml
+sources:
+  filesystem:
+    enabled: true
+    paths:
+      - ~/notes
+      - ~/Documents/tech
+    extensions: [".md", ".txt"]
 ```
 
 ## Database
@@ -190,9 +234,16 @@ llm:
 pa/
 ├── cmd/pa/main.go              # Server entrypoint
 ├── internal/
-│   ├── api/                    # HTTP handlers (health, search)
+│   ├── api/                    # HTTP handlers (health, search, ingest)
 │   ├── config/                 # Configuration loading
 │   ├── database/               # PostgreSQL connection & migrations
+│   ├── ingestion/              # Source syncers
+│   │   ├── syncer.go           # Common Syncer interface
+│   │   └── filesystem/         # Local filesystem scanner + watcher
+│   │       ├── scanner.go      # Directory walking, hashing, upsert
+│   │       ├── frontmatter.go  # YAML frontmatter parser
+│   │       ├── wikilinks.go    # Obsidian-style wikilink parser
+│   │       └── watcher.go      # fsnotify real-time file watcher
 │   ├── llm/                    # LLM provider interfaces & implementations
 │   │   ├── provider.go         # EmbeddingProvider + ChatProvider interfaces
 │   │   ├── ollama.go           # Ollama implementation

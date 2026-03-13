@@ -13,6 +13,7 @@ import (
 	"pa/internal/api"
 	"pa/internal/config"
 	"pa/internal/database"
+	"pa/internal/ingestion/filesystem"
 	"pa/internal/llm"
 	"pa/internal/retrieval"
 )
@@ -51,11 +52,29 @@ func main() {
 
 	embeddingSvc := retrieval.NewEmbeddingService(provider.Embedder, db)
 	searchSvc := retrieval.NewSearchService(provider.Embedder, db)
-	_ = embeddingSvc // used by ingestion in later sessions
+
+	fsScanner := filesystem.NewScanner(db, embeddingSvc, cfg.Sources.Filesystem)
+
+	if cfg.Sources.Filesystem.Enabled {
+		watcher, err := filesystem.NewWatcher(fsScanner)
+		if err != nil {
+			slog.Warn("failed to create filesystem watcher, real-time updates disabled", "error", err)
+		} else {
+			watchCtx, watchCancel := context.WithCancel(ctx)
+			defer watchCancel()
+			go func() {
+				if err := watcher.Start(watchCtx); err != nil {
+					slog.Error("filesystem watcher stopped", "error", err)
+				}
+			}()
+			slog.Info("filesystem watcher enabled")
+		}
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
+	mux.HandleFunc("POST /ingest/filesystem", api.IngestFilesystemHandler(fsScanner))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
