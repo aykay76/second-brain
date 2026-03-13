@@ -13,6 +13,8 @@ import (
 	"pa/internal/api"
 	"pa/internal/config"
 	"pa/internal/database"
+	"pa/internal/llm"
+	"pa/internal/retrieval"
 )
 
 func main() {
@@ -40,8 +42,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	provider, err := llm.NewProvider(cfg.LLM)
+	if err != nil {
+		slog.Error("failed to create llm provider", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("llm provider ready", "provider", cfg.LLM.Provider)
+
+	embeddingSvc := retrieval.NewEmbeddingService(provider.Embedder, db)
+	searchSvc := retrieval.NewSearchService(provider.Embedder, db)
+	_ = embeddingSvc // used by ingestion in later sessions
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
+	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),

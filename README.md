@@ -87,6 +87,44 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 |---|---|---|
 | `GET` | `/health` | Health check (database connectivity) |
 | `GET` | `/search?q=...` | Hybrid semantic + full-text search |
+| `GET` | `/search?q=...&mode=semantic` | Semantic (vector-only) search |
+| `GET` | `/search?q=...&limit=10` | Limit result count (default 20) |
+
+### Search
+
+The `/search` endpoint embeds your query via the configured LLM provider
+(Ollama by default) and performs a hybrid search combining:
+
+- **Semantic similarity** (pgvector cosine distance, weight 0.7)
+- **Full-text search** (PostgreSQL `ts_rank`, weight 0.3)
+
+Requires Ollama to be running with the embedding model loaded. If Ollama
+is not reachable, the endpoint returns an error with details.
+
+Example:
+
+```bash
+curl "http://localhost:8080/search?q=database+migrations&limit=5"
+```
+
+Response:
+
+```json
+{
+  "query": "database migrations",
+  "count": 2,
+  "results": [
+    {
+      "id": "...",
+      "source": "filesystem",
+      "artifact_type": "note",
+      "title": "Migration Strategies",
+      "score": 0.82,
+      "metadata": {}
+    }
+  ]
+}
+```
 
 ## Database
 
@@ -127,16 +165,42 @@ podman compose down      # stop containers, keep data
 podman compose down -v   # stop containers, delete data
 ```
 
+## LLM Providers
+
+The LLM layer is abstracted behind `EmbeddingProvider` and `ChatProvider`
+interfaces. Switch providers by changing `llm.provider` in the config.
+
+| Provider | Embedding Model | Dimension | Chat Model | Notes |
+|---|---|---|---|---|
+| `ollama` | `nomic-embed-text` | 768 | `llama3.1` | Default, fully local |
+| `openai` | `text-embedding-3-small` | 1536 | `gpt-4o` | Requires API key |
+
+To use OpenAI instead of Ollama:
+
+```yaml
+llm:
+  provider: openai
+  openai:
+    api_key: ${OPENAI_API_KEY}
+```
+
 ## Project Structure
 
 ```
 pa/
 ├── cmd/pa/main.go              # Server entrypoint
 ├── internal/
-│   ├── api/                    # HTTP handlers
+│   ├── api/                    # HTTP handlers (health, search)
 │   ├── config/                 # Configuration loading
 │   ├── database/               # PostgreSQL connection & migrations
-│   └── llm/                    # LLM provider interfaces & implementations
+│   ├── llm/                    # LLM provider interfaces & implementations
+│   │   ├── provider.go         # EmbeddingProvider + ChatProvider interfaces
+│   │   ├── ollama.go           # Ollama implementation
+│   │   ├── openai.go           # OpenAI implementation
+│   │   └── factory.go          # Provider factory
+│   └── retrieval/              # Embedding service & search
+│       ├── embedding.go        # Batch embedding + pgvector storage
+│       └── search.go           # Semantic & hybrid search
 ├── migrations/                 # SQL migration files (embedded)
 ├── config/config.yaml          # Default configuration
 └── compose.yaml                # PostgreSQL + pgvector
