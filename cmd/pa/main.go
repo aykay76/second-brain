@@ -13,6 +13,7 @@ import (
 	"pa/internal/api"
 	"pa/internal/config"
 	"pa/internal/database"
+	"pa/internal/discovery"
 	"pa/internal/ingestion/arxiv"
 	"pa/internal/ingestion/filesystem"
 	gh "pa/internal/ingestion/github"
@@ -81,6 +82,8 @@ func main() {
 	trendingSyncer := trending.NewSyncer(db, embeddingSvc, cfg.Sources.Trending, cfg.Sources.GitHub.Token)
 	youtubeSyncer := youtube.NewSyncer(db, embeddingSvc, cfg.Sources.YouTube)
 
+	discoveryEngine := discovery.NewEngine(db, cfg.Discovery)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
@@ -90,6 +93,7 @@ func main() {
 	mux.HandleFunc("POST /ingest/trending", api.IngestHandler(trendingSyncer))
 	mux.HandleFunc("POST /ingest/youtube", api.IngestHandler(youtubeSyncer))
 	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
+	mux.HandleFunc("POST /discover", api.DiscoverHandler(discoveryEngine))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),

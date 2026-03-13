@@ -55,3 +55,9 @@ sources:
     channels: ["UCVHFbqXqoYvEWM1Ddxl0QDg"]
     search_terms: ["Go programming", "distributed systems", "AI agents"]
     max_results: 50
+
+discovery:
+  enabled: true
+  similarity_threshold: 0.80
+  max_candidates: 10
+  batch_size: 50

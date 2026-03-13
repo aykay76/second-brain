@@ -94,6 +94,8 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `POST` | `/ingest/github` | Trigger GitHub sync (repos, PRs, commits, stars, gists) |
 | `POST` | `/ingest/arxiv` | Trigger arXiv paper sync (categories + keywords) |
 | `POST` | `/ingest/trending` | Trigger GitHub Trending scrape + sync |
+| `POST` | `/ingest/youtube` | Trigger YouTube video + transcript sync |
+| `POST` | `/discover` | Run cross-source relationship discovery |
 
 ### Search
 
@@ -390,6 +392,62 @@ sources:
     fetch_readme: true
 ```
 
+### Discovery
+
+The `/discover` endpoint runs the cross-source discovery engine, which
+automatically detects relationships between artifacts from different sources.
+
+```bash
+curl -X POST http://localhost:8080/discover
+```
+
+Response:
+
+```json
+{
+  "cross_source_related": 12,
+  "tag_co_occurrence": 3,
+  "author_matches": 2,
+  "citation_matches": 5,
+  "trending_research": 4,
+  "total": 26
+}
+```
+
+The engine runs five discovery strategies:
+
+- **Cross-source embedding similarity** — finds semantically similar artifacts
+  across different sources (e.g. a note about "event sourcing" matched to a
+  related arXiv paper) and creates `RELATED_TO` relationships
+- **Tag co-occurrence** — artifacts sharing 2+ auto-generated tags from
+  different sources get `SIMILAR_TOPIC` edges
+- **Author matching** — matches author names across GitHub owners, arXiv
+  paper authors, and YouTube channels to create `AUTHORED_BY_SAME` relationships
+- **Citation matching** — scans arXiv paper content for GitHub repository URLs
+  and creates `IMPLEMENTS` relationships
+- **Trending + research** — finds trending repos whose embeddings are
+  semantically similar to arXiv papers, suggesting they implement research ideas
+
+All relationships include confidence scores and metadata about how they were
+detected. The engine is idempotent — running it multiple times only creates
+new relationships, never duplicates.
+
+Configure in `config/config.yaml`:
+
+```yaml
+discovery:
+  enabled: true
+  similarity_threshold: 0.80
+  max_candidates: 10
+  batch_size: 50
+```
+
+| Setting | Default | Description |
+|---|---|---|
+| `similarity_threshold` | `0.80` | Minimum cosine similarity for `RELATED_TO` edges |
+| `max_candidates` | `10` | Maximum neighbor candidates per artifact |
+| `batch_size` | `50` | Artifacts processed per batch in similarity scan |
+
 ## Database
 
 The schema is managed via [golang-migrate](https://github.com/golang-migrate/migrate).
@@ -454,9 +512,10 @@ llm:
 pa/
 ├── cmd/pa/main.go              # Server entrypoint
 ├── internal/
-│   ├── api/                    # HTTP handlers (health, search, ask, ingest)
+│   ├── api/                    # HTTP handlers (health, search, ask, ingest, discover)
 │   ├── config/                 # Configuration loading
 │   ├── database/               # PostgreSQL connection & migrations
+│   ├── discovery/              # Cross-source relationship detection engine
 │   ├── ingestion/              # Source syncers
 │   │   ├── syncer.go           # Common Syncer interface
 │   │   ├── arxiv/              # arXiv paper syncer
@@ -470,9 +529,13 @@ pa/
 │   │   ├── github/             # Personal GitHub syncer
 │   │   │   ├── client.go       # HTTP client with auth, pagination, rate limiting
 │   │   │   └── syncer.go       # Repo, PR, commit, star, gist sync + cross-refs
-│   │   └── trending/           # GitHub Trending scraper
-│   │       ├── scraper.go      # Colly HTML scraper for trending page
-│   │       └── syncer.go       # Sync, API enrichment, relationship detection
+│   │   ├── trending/           # GitHub Trending scraper
+│   │   │   ├── scraper.go      # Colly HTML scraper for trending page
+│   │   │   └── syncer.go       # Sync, API enrichment, relationship detection
+│   │   └── youtube/            # YouTube video + transcript syncer
+│   │       ├── client.go       # YouTube Data API v3 client
+│   │       ├── transcript.go   # Auto-caption transcript extraction
+│   │       └── syncer.go       # Channel/search sync, relationship detection
 │   ├── llm/                    # LLM provider interfaces & implementations
 │   │   ├── provider.go         # EmbeddingProvider + ChatProvider interfaces
 │   │   ├── ollama.go           # Ollama implementation

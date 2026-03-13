@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Server  ServerConfig  `yaml:"server"`
-	DB      DBConfig      `yaml:"db"`
-	LLM     LLMConfig     `yaml:"llm"`
-	Sources SourcesConfig `yaml:"sources"`
+	Server    ServerConfig    `yaml:"server"`
+	DB        DBConfig        `yaml:"db"`
+	LLM       LLMConfig       `yaml:"llm"`
+	Sources   SourcesConfig   `yaml:"sources"`
+	Discovery DiscoveryConfig `yaml:"discovery"`
 }
 
 type SourcesConfig struct {
@@ -20,6 +21,13 @@ type SourcesConfig struct {
 	ArXiv      ArXivConfig      `yaml:"arxiv"`
 	Trending   TrendingConfig   `yaml:"trending"`
 	YouTube    YouTubeConfig    `yaml:"youtube"`
+}
+
+type DiscoveryConfig struct {
+	Enabled             bool    `yaml:"enabled"`
+	SimilarityThreshold float64 `yaml:"similarity_threshold"`
+	MaxCandidates       int    `yaml:"max_candidates"`
+	BatchSize           int    `yaml:"batch_size"`
 }
 
 type GitHubConfig struct {
