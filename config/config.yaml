@@ -56,6 +56,14 @@ sources:
     search_terms: ["Go programming", "distributed systems", "AI agents"]
     max_results: 50
 
+  onedrive:
+    enabled: false
+    client_id: ${ONEDRIVE_CLIENT_ID}
+    tenant_id: "consumers"
+    folders: ["/Documents/Engineering"]
+    extensions: [".md", ".txt", ".docx", ".pdf"]
+    token_file: "config/onedrive_tokens.json"
+
 discovery:
   enabled: true
   similarity_threshold: 0.80

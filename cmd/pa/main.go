@@ -17,6 +17,7 @@ import (
 	"pa/internal/ingestion/arxiv"
 	"pa/internal/ingestion/filesystem"
 	gh "pa/internal/ingestion/github"
+	"pa/internal/ingestion/onedrive"
 	"pa/internal/ingestion/trending"
 	"pa/internal/ingestion/youtube"
 	"pa/internal/llm"
@@ -81,6 +82,7 @@ func main() {
 	arxivSyncer := arxiv.NewSyncer(db, embeddingSvc, cfg.Sources.ArXiv)
 	trendingSyncer := trending.NewSyncer(db, embeddingSvc, cfg.Sources.Trending, cfg.Sources.GitHub.Token)
 	youtubeSyncer := youtube.NewSyncer(db, embeddingSvc, cfg.Sources.YouTube)
+	onedriveSyncer := onedrive.NewSyncer(db, embeddingSvc, cfg.Sources.OneDrive)
 
 	discoveryEngine := discovery.NewEngine(db, cfg.Discovery)
 
@@ -92,6 +94,7 @@ func main() {
 	mux.HandleFunc("POST /ingest/arxiv", api.IngestHandler(arxivSyncer))
 	mux.HandleFunc("POST /ingest/trending", api.IngestHandler(trendingSyncer))
 	mux.HandleFunc("POST /ingest/youtube", api.IngestHandler(youtubeSyncer))
+	mux.HandleFunc("POST /ingest/onedrive", api.IngestHandler(onedriveSyncer))
 	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
 	mux.HandleFunc("POST /discover", api.DiscoverHandler(discoveryEngine))
 

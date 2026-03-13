@@ -21,6 +21,7 @@ type SourcesConfig struct {
 	ArXiv      ArXivConfig      `yaml:"arxiv"`
 	Trending   TrendingConfig   `yaml:"trending"`
 	YouTube    YouTubeConfig    `yaml:"youtube"`
+	OneDrive   OneDriveConfig   `yaml:"onedrive"`
 }
 
 type DiscoveryConfig struct {
@@ -58,6 +59,15 @@ type YouTubeConfig struct {
 	Channels    []string `yaml:"channels"`
 	SearchTerms []string `yaml:"search_terms"`
 	MaxResults  int      `yaml:"max_results"`
+}
+
+type OneDriveConfig struct {
+	Enabled    bool     `yaml:"enabled"`
+	ClientID   string   `yaml:"client_id"`
+	TenantID   string   `yaml:"tenant_id"`
+	Folders    []string `yaml:"folders"`
+	Extensions []string `yaml:"extensions"`
+	TokenFile  string   `yaml:"token_file"`
 }
 
 type FilesystemConfig struct {

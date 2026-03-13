@@ -95,6 +95,7 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `POST` | `/ingest/arxiv` | Trigger arXiv paper sync (categories + keywords) |
 | `POST` | `/ingest/trending` | Trigger GitHub Trending scrape + sync |
 | `POST` | `/ingest/youtube` | Trigger YouTube video + transcript sync |
+| `POST` | `/ingest/onedrive` | Trigger OneDrive document sync |
 | `POST` | `/discover` | Run cross-source relationship discovery |
 
 ### Search
@@ -392,6 +393,127 @@ sources:
     fetch_readme: true
 ```
 
+### YouTube Ingestion
+
+The `/ingest/youtube` endpoint syncs videos from configured YouTube channels
+and search terms, including auto-generated transcripts.
+
+```bash
+curl -X POST http://localhost:8080/ingest/youtube
+```
+
+Response:
+
+```json
+{
+  "source": "youtube",
+  "ingested": 15,
+  "skipped": 5,
+  "errors": 0
+}
+```
+
+Features:
+
+- **Channel tracking** — syncs latest videos from configured YouTube channels
+- **Search discovery** — finds videos matching configured search terms
+- **Transcript extraction** — fetches auto-generated captions from YouTube's timedtext API
+- **Incremental sync** — cursor per channel tracks latest video date
+- **Deduplication** — videos discovered via both channel and search are ingested once
+- **Video enrichment** — fetches full details (duration, view count, like count, tags)
+- **Automatic embedding** — generates vector embeddings from title + description + transcript
+- **Relationship detection** — links videos to semantically similar papers, repos, and trending repos
+- **Rich metadata** — stores channel, duration, view/like counts, tags, thumbnail, transcript flag
+
+Requires a YouTube Data API v3 key. Set the `YOUTUBE_API_KEY` environment
+variable before starting the server:
+
+```bash
+export YOUTUBE_API_KEY=your_api_key_here
+```
+
+Configure in `config/config.yaml`:
+
+```yaml
+sources:
+  youtube:
+    enabled: true
+    api_key: ${YOUTUBE_API_KEY}
+    channels: ["UCVHFbqXqoYvEWM1Ddxl0QDg"]
+    search_terms: ["Go programming", "distributed systems", "AI agents"]
+    max_results: 50
+```
+
+### OneDrive Ingestion
+
+The `/ingest/onedrive` endpoint syncs documents from Microsoft OneDrive
+using the Graph API with delta queries for efficient incremental sync.
+
+```bash
+curl -X POST http://localhost:8080/ingest/onedrive
+```
+
+Response:
+
+```json
+{
+  "source": "onedrive",
+  "ingested": 8,
+  "skipped": 2,
+  "errors": 0
+}
+```
+
+Features:
+
+- **OAuth2 device code flow** — authenticate with your personal Microsoft account
+  (the server prints a URL and code to visit on first run)
+- **Token persistence** — access and refresh tokens are saved to a JSON file and
+  reused across restarts; expired tokens are refreshed automatically
+- **Delta sync** — uses Graph API delta queries so subsequent syncs only fetch
+  changed or new files, not the entire folder
+- **Deletion handling** — files removed from OneDrive are also removed from the
+  knowledge base via delta events
+- **Text extraction** for multiple formats:
+  - `.md` / `.txt` — direct content
+  - `.docx` — parses Office Open XML (word/document.xml) to extract paragraph text
+  - `.pdf` — basic text extraction from PDF text objects
+- **Configurable extension filter** — choose which file types to ingest
+- **Content hash deduplication** — skips unchanged files via SHA-256
+- **Automatic embedding** — generates vector embeddings on ingest
+- **Rich metadata** — stores folder, filename, size, MIME type, web URL, parent path,
+  last modified date in JSONB
+
+Requires a Microsoft Entra (Azure AD) app registration with `Files.Read` and
+`offline_access` permissions, configured for "Mobile and desktop applications"
+with device code flow enabled. Set the `ONEDRIVE_CLIENT_ID` environment
+variable before starting the server:
+
+```bash
+export ONEDRIVE_CLIENT_ID=your_client_id_here
+```
+
+Configure in `config/config.yaml`:
+
+```yaml
+sources:
+  onedrive:
+    enabled: false
+    client_id: ${ONEDRIVE_CLIENT_ID}
+    tenant_id: "consumers"
+    folders: ["/Documents/Engineering"]
+    extensions: [".md", ".txt", ".docx", ".pdf"]
+    token_file: "config/onedrive_tokens.json"
+```
+
+| Setting | Default | Description |
+|---|---|---|
+| `client_id` | (required) | Microsoft Entra app registration client ID |
+| `tenant_id` | `consumers` | `consumers` for personal accounts, or your tenant ID |
+| `folders` | `[]` | OneDrive folder paths to sync |
+| `extensions` | `.md,.txt,.docx,.pdf` | File extensions to ingest |
+| `token_file` | `config/onedrive_tokens.json` | Path to persist OAuth2 tokens |
+
 ### Discovery
 
 The `/discover` endpoint runs the cross-source discovery engine, which
@@ -529,6 +651,10 @@ pa/
 │   │   ├── github/             # Personal GitHub syncer
 │   │   │   ├── client.go       # HTTP client with auth, pagination, rate limiting
 │   │   │   └── syncer.go       # Repo, PR, commit, star, gist sync + cross-refs
+│   │   ├── onedrive/           # Microsoft OneDrive syncer
+│   │   │   ├── client.go       # Graph API client, OAuth2 device code flow
+│   │   │   ├── extract.go      # Text extraction (.md, .txt, .docx, .pdf)
+│   │   │   └── syncer.go       # Delta sync, dedup, deletion handling
 │   │   ├── trending/           # GitHub Trending scraper
 │   │   │   ├── scraper.go      # Colly HTML scraper for trending page
 │   │   │   └── syncer.go       # Sync, API enrichment, relationship detection
