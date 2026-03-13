@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+db:
+  host: localhost
+  port: 5433
+  name: pa
+  user: pa
+  password: pa
+  sslmode: disable
+  max_open_conns: 10
+  max_idle_conns: 5
+
+llm:
+  provider: ollama
+  ollama:
+    base_url: http://localhost:11434
+    embedding_model: nomic-embed-text
+    chat_model: llama3.1
+  openai:
+    api_key: ${OPENAI_API_KEY}
+    embedding_model: text-embedding-3-small
+    chat_model: gpt-4o
