@@ -89,6 +89,7 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `GET` | `/search?q=...` | Hybrid semantic + full-text search |
 | `GET` | `/search?q=...&mode=semantic` | Semantic (vector-only) search |
 | `GET` | `/search?q=...&limit=10` | Limit result count (default 20) |
+| `POST` | `/ask` | Ask a question, get a grounded answer with citations |
 | `POST` | `/ingest/filesystem` | Trigger filesystem scan and ingestion |
 | `POST` | `/ingest/github` | Trigger GitHub sync (repos, PRs, commits, stars, gists) |
 
@@ -127,6 +128,74 @@ Response:
   ]
 }
 ```
+
+### Ask (RAG)
+
+The `/ask` endpoint is a retrieval-augmented generation (RAG) pipeline that
+answers questions grounded in your personal knowledge base. It:
+
+1. Embeds your question via the configured LLM provider
+2. Performs hybrid search (semantic + full-text) for top-k relevant artifacts
+3. Enriches results with 1-hop related artifacts from the knowledge graph
+4. Assembles a context prompt with source metadata for citation
+5. Sends the context + question to the chat model
+6. Extracts `[N]` citation markers and maps them back to sources
+
+**JSON body (recommended):**
+
+```bash
+curl -X POST http://localhost:8080/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What approach did I use for database migrations?", "top_k": 10}'
+```
+
+**Query parameters (alternative):**
+
+```bash
+curl -X POST "http://localhost:8080/ask?q=What+approach+did+I+use+for+database+migrations&top_k=10"
+```
+
+Response:
+
+```json
+{
+  "question": "What approach did I use for database migrations?",
+  "answer": "Based on [1], you used golang-migrate with SQL migration files...",
+  "sources": [
+    {
+      "index": 1,
+      "artifact_id": "...",
+      "title": "Migration Strategies",
+      "source": "filesystem",
+      "artifact_type": "note",
+      "source_url": "/Users/you/notes/migrations.md",
+      "score": 0.85,
+      "cited": true
+    },
+    {
+      "index": 2,
+      "artifact_id": "...",
+      "title": "database-tools",
+      "source": "github",
+      "artifact_type": "repo",
+      "source_url": "https://github.com/you/database-tools",
+      "score": 0.72,
+      "cited": false
+    }
+  ]
+}
+```
+
+Parameters:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `question` / `q` | string | (required) | The question to answer |
+| `top_k` | int | 10 | Number of artifacts to retrieve for context |
+
+The system prompt instructs the model to answer only from provided context
+and cite sources using `[N]` notation. Sources marked `"cited": true` were
+explicitly referenced in the answer.
 
 ### Filesystem Ingestion
 
@@ -291,7 +360,7 @@ llm:
 pa/
 ├── cmd/pa/main.go              # Server entrypoint
 ├── internal/
-│   ├── api/                    # HTTP handlers (health, search, ingest)
+│   ├── api/                    # HTTP handlers (health, search, ask, ingest)
 │   ├── config/                 # Configuration loading
 │   ├── database/               # PostgreSQL connection & migrations
 │   ├── ingestion/              # Source syncers
@@ -309,9 +378,10 @@ pa/
 │   │   ├── ollama.go           # Ollama implementation
 │   │   ├── openai.go           # OpenAI implementation
 │   │   └── factory.go          # Provider factory
-│   └── retrieval/              # Embedding service & search
+│   └── retrieval/              # Embedding service, search & RAG
 │       ├── embedding.go        # Batch embedding + pgvector storage
-│       └── search.go           # Semantic & hybrid search
+│       ├── search.go           # Semantic & hybrid search
+│       └── rag.go              # RAG pipeline (search → enrich → chat → cite)
 ├── migrations/                 # SQL migration files (embedded)
 ├── config/config.yaml          # Default configuration
 └── compose.yaml                # PostgreSQL + pgvector

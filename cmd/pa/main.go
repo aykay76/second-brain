@@ -53,6 +53,7 @@ func main() {
 
 	embeddingSvc := retrieval.NewEmbeddingService(provider.Embedder, db)
 	searchSvc := retrieval.NewSearchService(provider.Embedder, db)
+	ragSvc := retrieval.NewRAGService(searchSvc, provider.Chat, db)
 
 	fsScanner := filesystem.NewScanner(db, embeddingSvc, cfg.Sources.Filesystem)
 
@@ -79,6 +80,7 @@ func main() {
 	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
 	mux.HandleFunc("POST /ingest/filesystem", api.IngestFilesystemHandler(fsScanner))
 	mux.HandleFunc("POST /ingest/github", api.IngestHandler(ghSyncer))
+	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
