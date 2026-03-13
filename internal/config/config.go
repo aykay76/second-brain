@@ -17,6 +17,7 @@ type Config struct {
 type SourcesConfig struct {
 	Filesystem FilesystemConfig `yaml:"filesystem"`
 	GitHub     GitHubConfig     `yaml:"github"`
+	ArXiv      ArXivConfig      `yaml:"arxiv"`
 }
 
 type GitHubConfig struct {
@@ -25,6 +26,14 @@ type GitHubConfig struct {
 	SyncStarred  bool     `yaml:"sync_starred"`
 	SyncGists    bool     `yaml:"sync_gists"`
 	IncludeRepos []string `yaml:"include_repos"`
+}
+
+type ArXivConfig struct {
+	Enabled          bool     `yaml:"enabled"`
+	Categories       []string `yaml:"categories"`
+	Keywords         []string `yaml:"keywords"`
+	MaxResults       int      `yaml:"max_results"`
+	InitialLookback  string   `yaml:"initial_lookback"`
 }
 
 type FilesystemConfig struct {

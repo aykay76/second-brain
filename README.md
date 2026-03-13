@@ -92,6 +92,7 @@ export PA_CONFIG_PATH=/path/to/your/config.yaml
 | `POST` | `/ask` | Ask a question, get a grounded answer with citations |
 | `POST` | `/ingest/filesystem` | Trigger filesystem scan and ingestion |
 | `POST` | `/ingest/github` | Trigger GitHub sync (repos, PRs, commits, stars, gists) |
+| `POST` | `/ingest/arxiv` | Trigger arXiv paper sync (categories + keywords) |
 
 ### Search
 
@@ -296,6 +297,51 @@ sources:
       - kubernetes/kubernetes
 ```
 
+### arXiv Ingestion
+
+The `/ingest/arxiv` endpoint syncs research papers from arXiv based on
+configured categories and keyword watchlists.
+
+```bash
+curl -X POST http://localhost:8080/ingest/arxiv
+```
+
+Response:
+
+```json
+{
+  "source": "arxiv",
+  "ingested": 47,
+  "skipped": 3,
+  "errors": 0
+}
+```
+
+Features:
+
+- **Category filtering** — watch specific arXiv categories (e.g. `cs.AI`, `cs.SE`, `cs.DC`)
+- **Keyword watchlists** — filter papers matching terms like "RAG", "knowledge graph"
+- **Incremental sync** — cursor tracks the latest paper date; subsequent syncs only fetch newer papers
+- **Configurable lookback** — `initial_lookback` controls how far back the first sync reaches (e.g. `30d`, `2w`)
+- **Content hash deduplication** — skips unchanged papers on re-sync
+- **arXiv ID parsing** — extracts and normalises arXiv IDs (handles versioned IDs like `2403.12345v1`)
+- **Citation extraction** — scans abstracts for arXiv ID references and creates `CITES` relationships
+- **Automatic embedding** — generates vector embeddings from title + abstract
+- **Rate limiting** — respects arXiv's recommended 3-second delay between requests
+- **Rich metadata** — stores authors, categories, arXiv ID, PDF URL in JSONB
+
+Configure in `config/config.yaml`:
+
+```yaml
+sources:
+  arxiv:
+    enabled: true
+    categories: ["cs.AI", "cs.SE", "cs.DC", "cs.CR"]
+    keywords: ["knowledge graph", "RAG", "embeddings", "LLM agents"]
+    max_results: 200
+    initial_lookback: "30d"
+```
+
 ## Database
 
 The schema is managed via [golang-migrate](https://github.com/golang-migrate/migrate).
@@ -365,6 +411,9 @@ pa/
 │   ├── database/               # PostgreSQL connection & migrations
 │   ├── ingestion/              # Source syncers
 │   │   ├── syncer.go           # Common Syncer interface
+│   │   ├── arxiv/              # arXiv paper syncer
+│   │   │   ├── client.go       # Atom XML API client with rate limiting
+│   │   │   └── syncer.go       # Category/keyword sync, citations, cursors
 │   │   ├── filesystem/         # Local filesystem scanner + watcher
 │   │   │   ├── scanner.go      # Directory walking, hashing, upsert
 │   │   │   ├── frontmatter.go  # YAML frontmatter parser

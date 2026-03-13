@@ -13,6 +13,7 @@ import (
 	"pa/internal/api"
 	"pa/internal/config"
 	"pa/internal/database"
+	"pa/internal/ingestion/arxiv"
 	"pa/internal/ingestion/filesystem"
 	gh "pa/internal/ingestion/github"
 	"pa/internal/llm"
@@ -74,12 +75,14 @@ func main() {
 	}
 
 	ghSyncer := gh.NewSyncer(db, embeddingSvc, cfg.Sources.GitHub)
+	arxivSyncer := arxiv.NewSyncer(db, embeddingSvc, cfg.Sources.ArXiv)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
 	mux.HandleFunc("POST /ingest/filesystem", api.IngestFilesystemHandler(fsScanner))
 	mux.HandleFunc("POST /ingest/github", api.IngestHandler(ghSyncer))
+	mux.HandleFunc("POST /ingest/arxiv", api.IngestHandler(arxivSyncer))
 	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
 
 	server := &http.Server{

@@ -36,3 +36,10 @@ sources:
     sync_starred: true
     sync_gists: true
     include_repos: []
+
+  arxiv:
+    enabled: true
+    categories: ["cs.AI", "cs.SE", "cs.DC", "cs.CR"]
+    keywords: ["knowledge graph", "RAG", "embeddings", "LLM agents"]
+    max_results: 200
+    initial_lookback: "30d"
