@@ -152,6 +152,11 @@ func (s *Syncer) syncRepo(ctx context.Context, repo *TrendingRepo, syncDate stri
 	}
 
 	embeddingText := repo.Name + "\n" + content
+	// Truncate to avoid exceeding embedding model context length
+	const maxEmbeddingContentLen = 4000
+	if len(embeddingText) > maxEmbeddingContentLen {
+		embeddingText = embeddingText[:maxEmbeddingContentLen]
+	}
 	if err := s.embedSvc.EmbedArtifact(ctx, id, embeddingText); err != nil {
 		slog.Warn("failed to generate embedding", "repo", repo.FullName, "error", err)
 	}

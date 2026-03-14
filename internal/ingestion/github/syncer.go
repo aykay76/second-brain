@@ -605,6 +605,11 @@ func (s *Syncer) upsertAndEmbed(ctx context.Context, in artifactInput) error {
 	}
 
 	embeddingText := in.Title + "\n" + in.Content
+	// Truncate to avoid exceeding embedding model context length
+	const maxEmbeddingContentLen = 4000
+	if len(embeddingText) > maxEmbeddingContentLen {
+		embeddingText = embeddingText[:maxEmbeddingContentLen]
+	}
 	if err := s.embedSvc.EmbedArtifact(ctx, id, embeddingText); err != nil {
 		slog.Warn("failed to generate embedding", "external_id", in.ExternalID, "error", err)
 	}
@@ -665,4 +670,3 @@ func sha256Hash(data string) string {
 	h := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(h[:])
 }
-

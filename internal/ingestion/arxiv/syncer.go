@@ -146,6 +146,11 @@ func (s *Syncer) syncPaper(ctx context.Context, paper *Paper, result *ingestion.
 	}
 
 	embeddingText := paper.Title + "\n" + paper.Abstract
+	// Truncate to avoid exceeding embedding model context length
+	const maxEmbeddingContentLen = 4000
+	if len(embeddingText) > maxEmbeddingContentLen {
+		embeddingText = embeddingText[:maxEmbeddingContentLen]
+	}
 	if err := s.embedSvc.EmbedArtifact(ctx, id, embeddingText); err != nil {
 		slog.Warn("failed to generate embedding", "arxiv_id", paper.ArXivID, "error", err)
 	}

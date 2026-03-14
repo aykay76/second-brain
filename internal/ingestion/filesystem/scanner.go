@@ -148,6 +148,11 @@ func (s *Scanner) ProcessFile(ctx context.Context, path string) (bool, error) {
 	}
 
 	embeddingText := title + "\n" + textContent
+	// Truncate to avoid exceeding embedding model context length
+	const maxEmbeddingContentLen = 4000
+	if len(embeddingText) > maxEmbeddingContentLen {
+		embeddingText = embeddingText[:maxEmbeddingContentLen]
+	}
 	if err := s.embedSvc.EmbedArtifact(ctx, artifactID, embeddingText); err != nil {
 		slog.Warn("failed to generate embedding", "path", path, "error", err)
 	}
