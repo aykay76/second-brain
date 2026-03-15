@@ -21,13 +21,13 @@ type Config struct {
 }
 
 type SourcesConfig struct {
-	Filesystem FilesystemConfig      `yaml:"filesystem"`
-	GitHub     GitHubConfig          `yaml:"github"`
-	ArXiv      ArXivConfig           `yaml:"arxiv"`
-	Trending   TrendingConfig        `yaml:"trending"`
-	YouTube    YouTubeConfig         `yaml:"youtube"`
-	OneDrive   OneDriveConfig        `yaml:"onedrive"`
-	TheNewStack TheNewStackConfig    `yaml:"thenewstack"`
+	Filesystem  FilesystemConfig  `yaml:"filesystem"`
+	GitHub      GitHubConfig      `yaml:"github"`
+	ArXiv       ArXivConfig       `yaml:"arxiv"`
+	Trending    TrendingConfig    `yaml:"trending"`
+	YouTube     YouTubeConfig     `yaml:"youtube"`
+	OneDrive    OneDriveConfig    `yaml:"onedrive"`
+	TheNewStack TheNewStackConfig `yaml:"thenewstack"`
 }
 
 type DiscoveryConfig struct {
@@ -81,8 +81,8 @@ type TrendingConfig struct {
 }
 
 type TheNewStackConfig struct {
-	Enabled      bool `yaml:"enabled"`
-	MaxArticles  int  `yaml:"max_articles"`
+	Enabled     bool `yaml:"enabled"`
+	MaxArticles int  `yaml:"max_articles"`
 }
 
 type YouTubeConfig struct {
