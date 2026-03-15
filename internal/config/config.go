@@ -1,8 +1,10 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -19,12 +21,13 @@ type Config struct {
 }
 
 type SourcesConfig struct {
-	Filesystem FilesystemConfig `yaml:"filesystem"`
-	GitHub     GitHubConfig     `yaml:"github"`
-	ArXiv      ArXivConfig      `yaml:"arxiv"`
-	Trending   TrendingConfig   `yaml:"trending"`
-	YouTube    YouTubeConfig    `yaml:"youtube"`
-	OneDrive   OneDriveConfig   `yaml:"onedrive"`
+	Filesystem FilesystemConfig      `yaml:"filesystem"`
+	GitHub     GitHubConfig          `yaml:"github"`
+	ArXiv      ArXivConfig           `yaml:"arxiv"`
+	Trending   TrendingConfig        `yaml:"trending"`
+	YouTube    YouTubeConfig         `yaml:"youtube"`
+	OneDrive   OneDriveConfig        `yaml:"onedrive"`
+	TheNewStack TheNewStackConfig    `yaml:"thenewstack"`
 }
 
 type DiscoveryConfig struct {
@@ -77,6 +80,11 @@ type TrendingConfig struct {
 	FetchReadme bool     `yaml:"fetch_readme"`
 }
 
+type TheNewStackConfig struct {
+	Enabled      bool `yaml:"enabled"`
+	MaxArticles  int  `yaml:"max_articles"`
+}
+
 type YouTubeConfig struct {
 	Enabled     bool     `yaml:"enabled"`
 	APIKey      string   `yaml:"api_key"`
@@ -126,6 +134,7 @@ type LLMConfig struct {
 	Provider string       `yaml:"provider"`
 	Ollama   OllamaConfig `yaml:"ollama"`
 	OpenAI   OpenAIConfig `yaml:"openai"`
+	Groq     GroqConfig   `yaml:"groq"`
 }
 
 type OllamaConfig struct {
@@ -140,7 +149,16 @@ type OpenAIConfig struct {
 	ChatModel      string `yaml:"chat_model"`
 }
 
+type GroqConfig struct {
+	APIKey         string `yaml:"api_key"`
+	EmbeddingModel string `yaml:"embedding_model"`
+	ChatModel      string `yaml:"chat_model"`
+}
+
 func Load(path string) (*Config, error) {
+	// Load .env files from current directory and parent directories
+	loadEnvFiles()
+
 	if envPath := os.Getenv("PA_CONFIG_PATH"); envPath != "" {
 		path = envPath
 	}
@@ -175,4 +193,62 @@ func (c *Config) validate() error {
 		return fmt.Errorf("db.name is required")
 	}
 	return nil
+}
+
+// loadEnvFiles loads environment variables from .env and .env.local files.
+// It searches for these files in the current working directory.
+// Environment variables already set are not overwritten.
+func loadEnvFiles() {
+	envFiles := []string{".env", ".env.local"}
+	for _, filename := range envFiles {
+		if err := parseEnvFile(filename); err == nil {
+			// File loaded successfully, continue to next
+		}
+		// Continue even if file doesn't exist or has errors
+	}
+}
+
+// parseEnvFile reads a .env file and sets environment variables.
+// Lines starting with # are treated as comments.
+// Format: KEY=VALUE or KEY="VALUE" or KEY='VALUE'
+// Empty lines are ignored.
+// Environment variables already set are not overwritten.
+func parseEnvFile(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return err // Silently fail if file doesn't exist
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse KEY=VALUE
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Remove quotes if present
+		if (strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`)) ||
+			(strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'")) {
+			value = value[1 : len(value)-1]
+		}
+
+		// Only set if not already in environment
+		if _, exists := os.LookupEnv(key); !exists {
+			os.Setenv(key, value)
+		}
+	}
+
+	return scanner.Err()
 }

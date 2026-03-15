@@ -21,12 +21,16 @@ llm:
     api_key: ${OPENAI_API_KEY}
     embedding_model: text-embedding-3-small
     chat_model: gpt-4o
+  groq:
+    api_key: ${GROQ_API_KEY}
+    embedding_model: nomic-embed-text
+    chat_model: gpt-4o
 
 sources:
   filesystem:
-    enabled: true
+    enabled: false
     paths:
-      - d:/
+      - d:/knowledge
     extensions: [".md", ".txt"]
 
   github:
@@ -51,7 +55,7 @@ sources:
   youtube:
     enabled: true
     api_key: ${YOUTUBE_API_KEY}
-    channels: ["UCVHFbqXqoYvEWM1Ddxl0QDg"]
+    # channels: ["UCVHFbqXqoYvEWM1Ddxl0QDg"]
     search_terms: ["Go programming", "distributed systems", "AI agents"]
     max_results: 50
 
@@ -62,6 +66,10 @@ sources:
     folders: ["/Documents/Engineering"]
     extensions: [".md", ".txt", ".docx", ".pdf"]
     token_file: "config/onedrive_tokens.json"
+
+  thenewstack:
+    enabled: false
+    max_articles: 50
 
 discovery:
   enabled: true

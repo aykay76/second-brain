@@ -2,3 +2,5 @@ pa.exe
 pa-cli.exe
 pa
 pa-cli
+.env
+.env.local

@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var validSources = []string{"filesystem", "github", "arxiv", "trending", "youtube", "onedrive"}
+var validSources = []string{"filesystem", "github", "arxiv", "trending", "youtube", "onedrive", "thenewstack"}
 
 func newIngestCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -14,7 +14,7 @@ func newIngestCmd() *cobra.Command {
 		Short: "Trigger ingestion from one or all sources",
 		Long: `Trigger a sync for a specific source or all configured sources.
 
-Available sources: filesystem, github, arxiv, trending, youtube, onedrive`,
+Available sources: filesystem, github, arxiv, trending, youtube, onedrive, thenewstack`,
 		Example: `  pa ingest             # sync all sources
   pa ingest github      # sync only GitHub
   pa ingest arxiv       # sync only arXiv papers`,

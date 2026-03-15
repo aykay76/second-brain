@@ -9,6 +9,7 @@ import (
 const (
 	dimensionOllama = 768  // nomic-embed-text
 	dimensionOpenAI = 1536 // text-embedding-3-small
+	dimensionGroq   = 768  // nomic-embed-text
 )
 
 type Provider struct {
@@ -39,7 +40,19 @@ func NewProvider(cfg config.LLMConfig) (*Provider, error) {
 		)
 		return &Provider{Embedder: p, Chat: p}, nil
 
+	case "groq":
+		if cfg.Groq.APIKey == "" {
+			return nil, fmt.Errorf("groq api_key is required when provider is groq")
+		}
+		p := NewGroqProvider(
+			cfg.Groq.APIKey,
+			cfg.Groq.EmbeddingModel,
+			cfg.Groq.ChatModel,
+			dimensionGroq,
+		)
+		return &Provider{Embedder: p, Chat: p}, nil
+
 	default:
-		return nil, fmt.Errorf("unknown llm provider: %q (expected ollama or openai)", cfg.Provider)
+		return nil, fmt.Errorf("unknown llm provider: %q (expected ollama, openai, or groq)", cfg.Provider)
 	}
 }
