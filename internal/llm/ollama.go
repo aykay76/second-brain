@@ -30,7 +30,7 @@ func NewOllamaProvider(baseURL, embeddingModel, chatModel, visionModel string, d
 		visionModel:    visionModel,
 		dimension:      dimension,
 		client: &http.Client{
-			Timeout: 120 * time.Second,
+			Timeout: 600 * time.Second, // 10 minutes for vision models
 		},
 	}
 }

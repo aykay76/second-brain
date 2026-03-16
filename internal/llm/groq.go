@@ -30,7 +30,7 @@ func NewGroqProvider(apiKey, embeddingModel, chatModel, visionModel string, dime
 		visionModel:    visionModel,
 		dimension:      dimension,
 		client: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 600 * time.Second, // 10 minutes for vision models
 		},
 	}
 }
