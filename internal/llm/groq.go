@@ -105,6 +105,25 @@ type groqChatResponse struct {
 	} `json:"choices"`
 }
 
+// For vision, we need to support content as either string or array of objects
+type groqVisionContent struct {
+	Type     string `json:"type"`
+	Text     string `json:"text,omitempty"`
+	ImageURL struct {
+		URL string `json:"url"`
+	} `json:"image_url,omitempty"`
+}
+
+type groqVisionMessage struct {
+	Role    string                `json:"role"`
+	Content interface{}           `json:"content"` // Can be string or []groqVisionContent
+}
+
+type groqVisionRequest struct {
+	Model    string               `json:"model"`
+	Messages []groqVisionMessage  `json:"messages"`
+}
+
 func (p *GroqProvider) Complete(ctx context.Context, messages []Message) (string, error) {
 	body := groqChatRequest{
 		Model:    p.chatModel,
@@ -137,6 +156,81 @@ func (p *GroqProvider) Complete(ctx context.Context, messages []Message) (string
 	var result groqChatResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", fmt.Errorf("decode chat response: %w", err)
+	}
+
+	if len(result.Choices) == 0 {
+		return "", fmt.Errorf("no choices in response")
+	}
+
+	return result.Choices[0].Message.Content, nil
+}
+
+// Vision sends a request to Groq with vision capabilities (e.g., llama-3.2-11b-vision-preview).
+// Groq uses base64-encoded images in the data URL format.
+func (p *GroqProvider) Vision(ctx context.Context, messages []VisionMessage) (string, error) {
+	// Convert VisionMessage to groqVisionMessage format with content as array for multimodal
+	groqMessages := make([]groqVisionMessage, len(messages))
+	for i, msg := range messages {
+		if msg.ImageBase64 != "" {
+			// For multimodal messages, content is an array
+			content := []groqVisionContent{
+				{
+					Type: "text",
+					Text: msg.Content,
+				},
+				{
+					Type: "image_url",
+					ImageURL: struct {
+						URL string `json:"url"`
+					}{
+						URL: fmt.Sprintf("data:%s;base64,%s", msg.MediaType, msg.ImageBase64),
+					},
+				},
+			}
+			groqMessages[i] = groqVisionMessage{
+				Role:    string(msg.Role),
+				Content: content,
+			}
+		} else {
+			// For text-only messages, content is a string
+			groqMessages[i] = groqVisionMessage{
+				Role:    string(msg.Role),
+				Content: msg.Content,
+			}
+		}
+	}
+
+	body := groqVisionRequest{
+		Model:    p.chatModel,
+		Messages: groqMessages,
+	}
+
+	data, err := json.Marshal(body)
+	if err != nil {
+		return "", fmt.Errorf("marshal vision request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.groq.com/openai/v1/chat/completions", bytes.NewReader(data))
+	if err != nil {
+		return "", fmt.Errorf("create vision request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+p.apiKey)
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("vision request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("vision returned %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var result groqChatResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode vision response: %w", err)
 	}
 
 	if len(result.Choices) == 0 {

@@ -29,6 +29,7 @@ var sourceColors = map[string]func(a ...interface{}) string{
 	"github_trending": yellow,
 	"youtube":         red,
 	"onedrive":        cyan,
+	"vision":          cyan,
 }
 
 var sourceIcons = map[string]string{
@@ -39,6 +40,7 @@ var sourceIcons = map[string]string{
 	"github_trending": "▲",
 	"youtube":         "▶",
 	"onedrive":        "☁",
+	"vision":          "🖼",
 }
 
 func colorSource(source string) string {

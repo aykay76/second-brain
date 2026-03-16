@@ -21,6 +21,7 @@ import (
 	"pa/internal/ingestion/onedrive"
 	"pa/internal/ingestion/thenewstack"
 	"pa/internal/ingestion/trending"
+	"pa/internal/ingestion/vision"
 	"pa/internal/ingestion/youtube"
 	"pa/internal/insights"
 	"pa/internal/llm"
@@ -89,6 +90,15 @@ func main() {
 	onedriveSyncer := onedrive.NewSyncer(db, embeddingSvc, cfg.Sources.OneDrive)
 	theNewStackSyncer := thenewstack.NewSyncer(db, embeddingSvc, cfg.Sources.TheNewStack)
 
+	var visionSyncer *vision.FilesystemSyncer
+	var visionJobManager *vision.JobManager
+	if cfg.Sources.Vision.Enabled && provider.Vision != nil {
+		visionSvc := vision.NewVisionService(provider.Vision)
+		visionSyncer = vision.NewFilesystemSyncer(db, embeddingSvc, visionSvc, cfg.Sources.Vision)
+		// Use 2 concurrent workers for vision jobs (quality over speed)
+		visionJobManager = vision.NewJobManager(visionSyncer, 2)
+	}
+
 	discoveryEngine := discovery.NewEngine(db, cfg.Discovery)
 
 	enrichSvc := tagging.NewService(provider.Chat, db, tagging.Config{
@@ -126,6 +136,10 @@ func main() {
 	mux.HandleFunc("POST /ingest/youtube", api.IngestHandler(youtubeSyncer))
 	mux.HandleFunc("POST /ingest/onedrive", api.IngestHandler(onedriveSyncer))
 	mux.HandleFunc("POST /ingest/thenewstack", api.IngestHandler(theNewStackSyncer))
+	if visionJobManager != nil {
+		mux.HandleFunc("POST /ingest/vision", api.VisionIngestHandler(visionJobManager))
+		mux.HandleFunc("GET /ingest/vision/jobs/{id}", api.VisionJobStatusHandler(visionJobManager))
+	}
 	mux.HandleFunc("POST /ask", api.AskHandler(ragSvc))
 	mux.HandleFunc("POST /discover", api.DiscoverHandler(discoveryEngine))
 	mux.HandleFunc("POST /enrich", api.EnrichHandler(enrichSvc))
@@ -163,6 +177,12 @@ func main() {
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("server shutdown error", "error", err)
+	}
+
+	if visionJobManager != nil {
+		if err := visionJobManager.Shutdown(shutdownCtx); err != nil {
+			slog.Warn("vision job manager shutdown error", "error", err)
+		}
 	}
 
 	slog.Info("server stopped")

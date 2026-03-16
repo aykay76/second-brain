@@ -15,6 +15,7 @@ const (
 type Provider struct {
 	Embedder EmbeddingProvider
 	Chat     ChatProvider
+	Vision   VisionProvider
 }
 
 func NewProvider(cfg config.LLMConfig) (*Provider, error) {
@@ -26,7 +27,7 @@ func NewProvider(cfg config.LLMConfig) (*Provider, error) {
 			cfg.Ollama.ChatModel,
 			dimensionOllama,
 		)
-		return &Provider{Embedder: p, Chat: p}, nil
+		return &Provider{Embedder: p, Chat: p, Vision: p}, nil
 
 	case "openai":
 		if cfg.OpenAI.APIKey == "" {
@@ -38,7 +39,7 @@ func NewProvider(cfg config.LLMConfig) (*Provider, error) {
 			cfg.OpenAI.ChatModel,
 			dimensionOpenAI,
 		)
-		return &Provider{Embedder: p, Chat: p}, nil
+		return &Provider{Embedder: p, Chat: p, Vision: nil}, nil
 
 	case "groq":
 		if cfg.Groq.APIKey == "" {
@@ -50,7 +51,7 @@ func NewProvider(cfg config.LLMConfig) (*Provider, error) {
 			cfg.Groq.ChatModel,
 			dimensionGroq,
 		)
-		return &Provider{Embedder: p, Chat: p}, nil
+		return &Provider{Embedder: p, Chat: p, Vision: p}, nil
 
 	default:
 		return nil, fmt.Errorf("unknown llm provider: %q (expected ollama, openai, or groq)", cfg.Provider)

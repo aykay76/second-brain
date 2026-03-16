@@ -70,6 +70,23 @@ type IngestResponse struct {
 	Errors   int    `json:"errors"`
 }
 
+type VisionJobResponse struct {
+	Message string `json:"message"`
+	JobID   string `json:"job_id"`
+	Status  string `json:"status"`
+}
+
+type VisionJobStatus struct {
+	ID              string `json:"id"`
+	StartedAt       string `json:"started_at"`
+	Done            bool   `json:"done"`
+	ElapsedSeconds  int    `json:"elapsed_seconds"`
+	Ingested        int    `json:"ingested,omitempty"`
+	Skipped         int    `json:"skipped,omitempty"`
+	Errors          int    `json:"errors,omitempty"`
+	Error           string `json:"error,omitempty"`
+}
+
 type Artifact struct {
 	ID           string          `json:"id"`
 	Source       string          `json:"source"`

@@ -28,6 +28,7 @@ type SourcesConfig struct {
 	YouTube     YouTubeConfig     `yaml:"youtube"`
 	OneDrive    OneDriveConfig    `yaml:"onedrive"`
 	TheNewStack TheNewStackConfig `yaml:"thenewstack"`
+	Vision      VisionConfig      `yaml:"vision"`
 }
 
 type DiscoveryConfig struct {
@@ -108,6 +109,16 @@ type FilesystemConfig struct {
 	Extensions []string `yaml:"extensions"`
 }
 
+type VisionConfig struct {
+	Enabled             bool     `yaml:"enabled"`
+	Paths               []string `yaml:"paths"`
+	Extensions          []string `yaml:"extensions"`
+	CaptioningPrompt    string   `yaml:"captioning_prompt"`
+	VisionModel         string   `yaml:"vision_model"`
+	BatchSize           int      `yaml:"batch_size"`
+	MaxConcurrentImages int      `yaml:"max_concurrent_images"`
+}
+
 type ServerConfig struct {
 	Port int `yaml:"port"`
 }
@@ -141,6 +152,7 @@ type OllamaConfig struct {
 	BaseURL        string `yaml:"base_url"`
 	EmbeddingModel string `yaml:"embedding_model"`
 	ChatModel      string `yaml:"chat_model"`
+	VisionModel    string `yaml:"vision_model"`
 }
 
 type OpenAIConfig struct {
@@ -153,6 +165,7 @@ type GroqConfig struct {
 	APIKey         string `yaml:"api_key"`
 	EmbeddingModel string `yaml:"embedding_model"`
 	ChatModel      string `yaml:"chat_model"`
+	VisionModel    string `yaml:"vision_model"`
 }
 
 func Load(path string) (*Config, error) {

@@ -17,6 +17,7 @@ llm:
     base_url: http://localhost:11434
     embedding_model: nomic-embed-text
     chat_model: llama3.1
+    vision_model: llama3.2-vision:11b
   openai:
     api_key: ${OPENAI_API_KEY}
     embedding_model: text-embedding-3-small
@@ -25,6 +26,7 @@ llm:
     api_key: ${GROQ_API_KEY}
     embedding_model: nomic-embed-text
     chat_model: gpt-4o
+    vision_model: llama-3.2-11b-vision-preview
 
 sources:
   filesystem:
@@ -70,6 +72,15 @@ sources:
   thenewstack:
     enabled: false
     max_articles: 50
+
+  vision:
+    enabled: true
+    paths:
+      - D:/media/photos
+    extensions: [".png", ".jpg", ".jpeg"]
+    vision_model: llama3.2-vision:11b
+    batch_size: 10
+    max_concurrent_images: 2
 
 discovery:
   enabled: true

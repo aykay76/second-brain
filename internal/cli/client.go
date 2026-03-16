@@ -158,6 +158,26 @@ func (c *Client) Ingest(source string) (*IngestResponse, error) {
 	return &resp, json.Unmarshal(data, &resp)
 }
 
+// IngestVision starts an async vision ingestion job.
+func (c *Client) IngestVision() (*VisionJobResponse, error) {
+	data, err := c.post("/ingest/vision", nil)
+	if err != nil {
+		return nil, err
+	}
+	var resp VisionJobResponse
+	return &resp, json.Unmarshal(data, &resp)
+}
+
+// VisionJobStatus gets the status of a vision ingestion job.
+func (c *Client) VisionJobStatus(jobID string) (*VisionJobStatus, error) {
+	data, err := c.get("/ingest/vision/jobs/"+jobID, nil)
+	if err != nil {
+		return nil, err
+	}
+	var resp VisionJobStatus
+	return &resp, json.Unmarshal(data, &resp)
+}
+
 // ListArtifacts retrieves filtered artifact listings.
 func (c *Client) ListArtifacts(source, artifactType string, limit int, sort string) (*ArtifactListResponse, error) {
 	q := url.Values{}
