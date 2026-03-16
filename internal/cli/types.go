@@ -31,7 +31,7 @@ type StatusResponse struct {
 type SearchResult struct {
 	ID           string          `json:"id"`
 	Source       string          `json:"source"`
-	ArtifactType string         `json:"artifact_type"`
+	ArtifactType string          `json:"artifact_type"`
 	Title        string          `json:"title"`
 	Content      *string         `json:"content,omitempty"`
 	Summary      *string         `json:"summary,omitempty"`
@@ -77,20 +77,20 @@ type VisionJobResponse struct {
 }
 
 type VisionJobStatus struct {
-	ID              string `json:"id"`
-	StartedAt       string `json:"started_at"`
-	Done            bool   `json:"done"`
-	ElapsedSeconds  int    `json:"elapsed_seconds"`
-	Ingested        int    `json:"ingested,omitempty"`
-	Skipped         int    `json:"skipped,omitempty"`
-	Errors          int    `json:"errors,omitempty"`
-	Error           string `json:"error,omitempty"`
+	ID             string `json:"id"`
+	StartedAt      string `json:"started_at"`
+	Done           bool   `json:"done"`
+	ElapsedSeconds int    `json:"elapsed_seconds"`
+	Ingested       int    `json:"ingested,omitempty"`
+	Skipped        int    `json:"skipped,omitempty"`
+	Errors         int    `json:"errors,omitempty"`
+	Error          string `json:"error,omitempty"`
 }
 
 type Artifact struct {
 	ID           string          `json:"id"`
 	Source       string          `json:"source"`
-	ArtifactType string         `json:"artifact_type"`
+	ArtifactType string          `json:"artifact_type"`
 	Title        string          `json:"title"`
 	Summary      *string         `json:"summary,omitempty"`
 	SourceURL    *string         `json:"source_url,omitempty"`
@@ -280,10 +280,10 @@ type SerendipityItem struct {
 }
 
 type TopicsResponse struct {
-	Period  string       `json:"period"`
-	Gaining []TopicFull  `json:"gaining"`
-	Cooling []TopicFull  `json:"cooling"`
-	Steady  []TopicFull  `json:"steady"`
+	Period  string      `json:"period"`
+	Gaining []TopicFull `json:"gaining"`
+	Cooling []TopicFull `json:"cooling"`
+	Steady  []TopicFull `json:"steady"`
 }
 
 type TopicFull struct {

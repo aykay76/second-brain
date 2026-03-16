@@ -28,11 +28,11 @@ var defaultCaptioningPrompt = "Provide a concise, informative caption for this i
 
 // FilesystemSyncer scans for images in the filesystem and generates captions.
 type FilesystemSyncer struct {
-	db              *sql.DB
-	embedSvc        *retrieval.EmbeddingService
-	visionSvc       *VisionService
-	paths           []string
-	extensions      map[string]bool
+	db               *sql.DB
+	embedSvc         *retrieval.EmbeddingService
+	visionSvc        *VisionService
+	paths            []string
+	extensions       map[string]bool
 	captioningPrompt string
 	// For testing: if skipCaption is true, don't actually call vision model
 	skipCaption bool

@@ -115,13 +115,13 @@ type groqVisionContent struct {
 }
 
 type groqVisionMessage struct {
-	Role    string                `json:"role"`
-	Content interface{}           `json:"content"` // Can be string or []groqVisionContent
+	Role    string      `json:"role"`
+	Content interface{} `json:"content"` // Can be string or []groqVisionContent
 }
 
 type groqVisionRequest struct {
-	Model    string               `json:"model"`
-	Messages []groqVisionMessage  `json:"messages"`
+	Model    string              `json:"model"`
+	Messages []groqVisionMessage `json:"messages"`
 }
 
 func (p *GroqProvider) Complete(ctx context.Context, messages []Message) (string, error) {

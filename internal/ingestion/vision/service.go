@@ -13,25 +13,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rwcarlsen/goexif/exif"
 	"pa/internal/llm"
+
+	"github.com/rwcarlsen/goexif/exif"
 )
 
 // Metadata represents extracted image metadata.
 type Metadata struct {
-	FileName    string         `json:"file_name"`
-	FilePath    string         `json:"file_path"`
-	FileSize    int64          `json:"file_size"`
-	Width       int            `json:"width"`
-	Height      int            `json:"height"`
-	DateTaken   *time.Time     `json:"date_taken,omitempty"`
-	Camera      string         `json:"camera,omitempty"`
-	Lens        string         `json:"lens,omitempty"`
-	ISO         string         `json:"iso,omitempty"`
-	FocalLength string         `json:"focal_length,omitempty"`
-	Aperture    string         `json:"aperture,omitempty"`
-	ShutterSpeed string        `json:"shutter_speed,omitempty"`
-	Additional  map[string]any `json:"additional,omitempty"`
+	FileName     string         `json:"file_name"`
+	FilePath     string         `json:"file_path"`
+	FileSize     int64          `json:"file_size"`
+	Width        int            `json:"width"`
+	Height       int            `json:"height"`
+	DateTaken    *time.Time     `json:"date_taken,omitempty"`
+	Camera       string         `json:"camera,omitempty"`
+	Lens         string         `json:"lens,omitempty"`
+	ISO          string         `json:"iso,omitempty"`
+	FocalLength  string         `json:"focal_length,omitempty"`
+	Aperture     string         `json:"aperture,omitempty"`
+	ShutterSpeed string         `json:"shutter_speed,omitempty"`
+	Additional   map[string]any `json:"additional,omitempty"`
 }
 
 // VisionService provides image processing capabilities.
@@ -144,14 +145,14 @@ func getImageDimensions(filePath string) (int, int, error) {
 
 // EXIFData represents extracted EXIF information.
 type EXIFData struct {
-	DateTaken   *time.Time
-	Camera      string
-	Lens        string
-	ISO         string
-	FocalLength string
-	Aperture    string
+	DateTaken    *time.Time
+	Camera       string
+	Lens         string
+	ISO          string
+	FocalLength  string
+	Aperture     string
 	ShutterSpeed string
-	Additional  map[string]any
+	Additional   map[string]any
 }
 
 func extractEXIFData(filePath string) (*EXIFData, error) {

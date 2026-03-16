@@ -98,15 +98,15 @@ type ollamaChatResponse struct {
 
 // For vision requests, message format includes base64 images in messages.
 type ollamaVisionMessage struct {
-	Role    string      `json:"role"`
-	Content string      `json:"content"`
-	Images  []string    `json:"images,omitempty"` // base64-encoded images
+	Role    string   `json:"role"`
+	Content string   `json:"content"`
+	Images  []string `json:"images,omitempty"` // base64-encoded images
 }
 
 type ollamaVisionRequest struct {
-	Model    string                  `json:"model"`
-	Messages []ollamaVisionMessage   `json:"messages"`
-	Stream   bool                    `json:"stream"`
+	Model    string                `json:"model"`
+	Messages []ollamaVisionMessage `json:"messages"`
+	Stream   bool                  `json:"stream"`
 }
 
 func (p *OllamaProvider) Complete(ctx context.Context, messages []Message) (string, error) {
