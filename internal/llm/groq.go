@@ -14,15 +14,20 @@ type GroqProvider struct {
 	apiKey         string
 	embeddingModel string
 	chatModel      string
+	visionModel    string
 	dimension      int
 	client         *http.Client
 }
 
-func NewGroqProvider(apiKey, embeddingModel, chatModel string, dimension int) *GroqProvider {
+func NewGroqProvider(apiKey, embeddingModel, chatModel, visionModel string, dimension int) *GroqProvider {
+	if visionModel == "" {
+		visionModel = chatModel // fall back to chat model if vision model not specified
+	}
 	return &GroqProvider{
 		apiKey:         apiKey,
 		embeddingModel: embeddingModel,
 		chatModel:      chatModel,
+		visionModel:    visionModel,
 		dimension:      dimension,
 		client: &http.Client{
 			Timeout: 60 * time.Second,
@@ -201,7 +206,7 @@ func (p *GroqProvider) Vision(ctx context.Context, messages []VisionMessage) (st
 	}
 
 	body := groqVisionRequest{
-		Model:    p.chatModel,
+		Model:    p.visionModel,
 		Messages: groqMessages,
 	}
 

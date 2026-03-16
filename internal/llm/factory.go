@@ -25,6 +25,7 @@ func NewProvider(cfg config.LLMConfig) (*Provider, error) {
 			cfg.Ollama.BaseURL,
 			cfg.Ollama.EmbeddingModel,
 			cfg.Ollama.ChatModel,
+			cfg.Ollama.VisionModel,
 			dimensionOllama,
 		)
 		return &Provider{Embedder: p, Chat: p, Vision: p}, nil
@@ -49,6 +50,7 @@ func NewProvider(cfg config.LLMConfig) (*Provider, error) {
 			cfg.Groq.APIKey,
 			cfg.Groq.EmbeddingModel,
 			cfg.Groq.ChatModel,
+			cfg.Groq.VisionModel,
 			dimensionGroq,
 		)
 		return &Provider{Embedder: p, Chat: p, Vision: p}, nil

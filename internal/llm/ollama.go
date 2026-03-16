@@ -14,15 +14,20 @@ type OllamaProvider struct {
 	baseURL        string
 	embeddingModel string
 	chatModel      string
+	visionModel    string
 	dimension      int
 	client         *http.Client
 }
 
-func NewOllamaProvider(baseURL, embeddingModel, chatModel string, dimension int) *OllamaProvider {
+func NewOllamaProvider(baseURL, embeddingModel, chatModel, visionModel string, dimension int) *OllamaProvider {
+	if visionModel == "" {
+		visionModel = chatModel // fall back to chat model if vision model not specified
+	}
 	return &OllamaProvider{
 		baseURL:        baseURL,
 		embeddingModel: embeddingModel,
 		chatModel:      chatModel,
+		visionModel:    visionModel,
 		dimension:      dimension,
 		client: &http.Client{
 			Timeout: 120 * time.Second,
@@ -162,7 +167,7 @@ func (p *OllamaProvider) Vision(ctx context.Context, messages []VisionMessage) (
 	}
 
 	body := ollamaVisionRequest{
-		Model:    p.chatModel,
+		Model:    p.visionModel,
 		Messages: ollamaMessages,
 		Stream:   false,
 	}
