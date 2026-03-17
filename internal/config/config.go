@@ -18,6 +18,7 @@ type Config struct {
 	Enrichment EnrichmentConfig `yaml:"enrichment"`
 	Digest     DigestConfig     `yaml:"digest"`
 	Insights   InsightsConfig   `yaml:"insights"`
+	Logging    LoggingConfig    `yaml:"logging"`
 }
 
 type SourcesConfig struct {
@@ -117,6 +118,10 @@ type VisionConfig struct {
 	VisionModel         string   `yaml:"vision_model"`
 	BatchSize           int      `yaml:"batch_size"`
 	MaxConcurrentImages int      `yaml:"max_concurrent_images"`
+}
+
+type LoggingConfig struct {
+	Level string `yaml:"level"`
 }
 
 type ServerConfig struct {

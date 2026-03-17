@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+logging:
+  level: debug  # valid values: debug, info, warn, error
+
 db:
   host: localhost
   port: 5433
@@ -76,7 +79,7 @@ sources:
   vision:
     enabled: true
     paths:
-      - D:/media/photos
+      - D:/media/photos/2025.05 - China
     extensions: [".png", ".jpg", ".jpeg"]
     vision_model: llama3.2-vision:11b
     batch_size: 10
