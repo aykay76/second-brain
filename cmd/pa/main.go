@@ -97,8 +97,7 @@ func main() {
 	if cfg.Sources.Vision.Enabled && provider.Vision != nil {
 		visionSvc := vision.NewVisionService(provider.Vision)
 		visionSyncer = vision.NewFilesystemSyncer(db, embeddingSvc, visionSvc, cfg.Sources.Vision)
-		// Use 2 concurrent workers for vision jobs (quality over speed)
-		visionJobManager = vision.NewJobManager(visionSyncer, 2)
+		visionJobManager = vision.NewJobManager(visionSyncer, cfg.Sources.Vision.MaxConcurrentImages, cfg.Sources.Vision.BatchSize)
 	}
 
 	discoveryEngine := discovery.NewEngine(db, cfg.Discovery)

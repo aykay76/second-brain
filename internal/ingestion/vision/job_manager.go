@@ -29,14 +29,14 @@ type Job struct {
 }
 
 // NewJobManager creates a new async vision job manager.
-func NewJobManager(syncer *FilesystemSyncer, workers int) *JobManager {
+func NewJobManager(syncer *FilesystemSyncer, workers int, batchSize int) *JobManager {
 	if workers <= 0 {
 		workers = 1
 	}
 
 	jm := &JobManager{
 		syncer:   syncer,
-		jobQueue: make(chan *Job, 100),
+		jobQueue: make(chan *Job, batchSize),
 		done:     make(chan struct{}),
 	}
 
