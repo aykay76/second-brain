@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -29,6 +31,9 @@ import (
 	"pa/internal/retrieval"
 	"pa/internal/tagging"
 )
+
+//go:embed web/*
+var webFiles embed.FS
 
 func main() {
 	cfg, err := config.Load("config/config.yaml")
@@ -123,7 +128,50 @@ func main() {
 
 	digestSvc.SetInsights(insightsSvc)
 
+	// Set up web filesystem
+	fsWeb, err := fs.Sub(webFiles, "web")
+	if err != nil {
+		slog.Warn("failed to extract web filesystem", "error", err)
+	}
+
+	// Register web filesystem with API package for static file serving
+	if fsWeb != nil {
+		api.SetWebFS(fsWeb)
+	}
+
+	// Create main mux for API and web
 	mux := http.NewServeMux()
+
+	// Web UI and static files - serve before API routes
+	mux.HandleFunc("GET /", api.ServeIndexHandler(fsWeb))
+	mux.HandleFunc("GET /css/", api.ServeStaticHandler("css", fsWeb))
+	mux.HandleFunc("GET /js/", api.ServeStaticHandler("js", fsWeb))
+	mux.HandleFunc("GET /api/v1/artifacts/{id}/related", api.RelatedHandler(db))
+	mux.HandleFunc("POST /api/v1/artifacts/{id}/tags", api.TagHandler(db))
+	mux.HandleFunc("POST /api/v1/ingest/filesystem", api.IngestFilesystemHandler(fsScanner))
+	mux.HandleFunc("POST /api/v1/ingest/github", api.IngestHandler(ghSyncer))
+	mux.HandleFunc("POST /api/v1/ingest/arxiv", api.IngestHandler(arxivSyncer))
+	mux.HandleFunc("POST /api/v1/ingest/trending", api.IngestHandler(trendingSyncer))
+	mux.HandleFunc("POST /api/v1/ingest/youtube", api.IngestHandler(youtubeSyncer))
+	mux.HandleFunc("POST /api/v1/ingest/onedrive", api.IngestHandler(onedriveSyncer))
+	mux.HandleFunc("POST /api/v1/ingest/thenewstack", api.IngestHandler(theNewStackSyncer))
+	if visionJobManager != nil {
+		mux.HandleFunc("POST /api/v1/ingest/vision", api.VisionIngestHandler(visionJobManager))
+		mux.HandleFunc("GET /api/v1/ingest/vision/jobs/{id}", api.VisionJobStatusHandler(visionJobManager))
+	}
+	mux.HandleFunc("POST /api/v1/ask", api.AskHandler(ragSvc))
+	mux.HandleFunc("POST /api/v1/chat/ask", api.ChatAskHandler(ragSvc))
+	mux.HandleFunc("POST /api/v1/discover", api.DiscoverHandler(discoveryEngine))
+	mux.HandleFunc("POST /api/v1/enrich", api.EnrichHandler(enrichSvc))
+	mux.HandleFunc("GET /api/v1/digest", api.DigestHandler(digestSvc))
+	mux.HandleFunc("GET /api/v1/insights/gems", api.GemsHandler(insightsSvc))
+	mux.HandleFunc("GET /api/v1/insights/serendipity", api.SerendipityHandler(insightsSvc))
+	mux.HandleFunc("GET /api/v1/insights/topics", api.TopicsHandler(insightsSvc))
+	mux.HandleFunc("GET /api/v1/insights/depth", api.DepthHandler(insightsSvc))
+	mux.HandleFunc("GET /api/v1/insights/velocity", api.VelocityHandler(insightsSvc))
+	mux.HandleFunc("GET /api/v1/insights/memories", api.MemoriesHandler(insightsSvc))
+
+	// Keep backwards compatibility with non-versioned endpoints
 	mux.HandleFunc("GET /health", api.HealthHandler(db))
 	mux.HandleFunc("GET /status", api.StatusHandler(db))
 	mux.HandleFunc("GET /search", api.SearchHandler(searchSvc))
