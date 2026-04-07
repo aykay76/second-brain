@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	defaultTopK           = 10
-	defaultMaxRelated     = 5
-	defaultMaxContentLen  = 1500
-	defaultMaxContextLen  = 12000
+	defaultTopK          = 10
+	defaultMaxRelated    = 5
+	defaultMaxContentLen = 1500
+	defaultMaxContextLen = 12000
 )
 
 var citationRe = regexp.MustCompile(`\[(\d+)]`)

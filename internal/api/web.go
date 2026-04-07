@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -123,8 +124,8 @@ type ChatAskRequest struct {
 
 // ChatAskResponse represents a chat ask response
 type ChatAskResponse struct {
-	Answer  string   `json:"answer"`
-	Sources []string `json:"sources,omitempty"`
+	Answer  string             `json:"answer"`
+	Sources []retrieval.Source `json:"sources,omitempty"`
 }
 
 // ChatAskHandler returns a handler for chat-based ask requests
@@ -158,6 +159,8 @@ func ChatAskHandler(ragSvc *retrieval.RAGService) http.HandlerFunc {
 			return
 		}
 
+		fmt.Println("Response: ", resp)
+
 		// Extract sources from the response if available
 		sources := []string{}
 		if resp.Sources != nil && len(resp.Sources) > 0 {
@@ -174,7 +177,7 @@ func ChatAskHandler(ragSvc *retrieval.RAGService) http.HandlerFunc {
 
 		writeJSON(w, http.StatusOK, ChatAskResponse{
 			Answer:  resp.Answer,
-			Sources: sources,
+			Sources: resp.Sources,
 		})
 	}
 }

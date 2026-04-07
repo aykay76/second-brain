@@ -33,20 +33,20 @@ llm:
 
 sources:
   filesystem:
-    enabled: false
+    enabled: true
     paths:
       - d:/knowledge
     extensions: [".md", ".txt"]
 
   github:
-    enabled: false
+    enabled: true
     token: ${GITHUB_TOKEN}
     sync_starred: true
     sync_gists: true
     include_repos: []
 
   arxiv:
-    enabled: false
+    enabled: true
     categories: ["cs.AI", "cs.SE", "cs.DC", "cs.CR"]
     keywords: ["knowledge graph", "RAG", "embeddings", "LLM agents"]
     max_results: 200
@@ -73,12 +73,12 @@ sources:
     token_file: "config/onedrive_tokens.json"
 
   thenewstack:
-    enabled: false
+    enabled: true
     max_articles: 50
 
   devto:
-    enabled: false
-    tags: ["golang", "distributed-systems", "ai"]
+    enabled: true
+    tags: ["golang", "programming", "devops", "ai", "go", "kubernetes"]
     max_articles: 50
 
   vision:

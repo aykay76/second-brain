@@ -107,6 +107,7 @@ func (s *Syncer) syncTag(ctx context.Context, tag string, maxArticles int, resul
 }
 
 func (s *Syncer) syncArticle(ctx context.Context, article *Article, result *ingestion.SyncResult) error {
+	fmt.Println("Syncing article:", article)
 	// Skip articles without title or URL
 	if article.Title == "" || article.URL == "" {
 		result.Skipped++
@@ -114,10 +115,10 @@ func (s *Syncer) syncArticle(ctx context.Context, article *Article, result *inge
 	}
 
 	// Skip if not published
-	if !article.Published {
-		result.Skipped++
-		return nil
-	}
+	// if !article.Published {
+	// 	result.Skipped++
+	// 	return nil
+	// }
 
 	// Use body_markdown for content if available, otherwise body_html
 	content := article.Title
