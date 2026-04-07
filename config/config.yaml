@@ -76,6 +76,11 @@ sources:
     enabled: false
     max_articles: 50
 
+  devto:
+    enabled: false
+    tags: ["golang", "distributed-systems", "ai"]
+    max_articles: 50
+
   vision:
     enabled: true
     paths:
