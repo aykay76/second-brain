@@ -19,6 +19,7 @@ import (
 	"pa/internal/digest"
 	"pa/internal/discovery"
 	"pa/internal/ingestion/arxiv"
+	"pa/internal/ingestion/devto"
 	"pa/internal/ingestion/filesystem"
 	gh "pa/internal/ingestion/github"
 	"pa/internal/ingestion/onedrive"
@@ -96,6 +97,7 @@ func main() {
 	youtubeSyncer := youtube.NewSyncer(db, embeddingSvc, cfg.Sources.YouTube)
 	onedriveSyncer := onedrive.NewSyncer(db, embeddingSvc, cfg.Sources.OneDrive)
 	theNewStackSyncer := thenewstack.NewSyncer(db, embeddingSvc, cfg.Sources.TheNewStack)
+	devtoSyncer := devto.NewSyncer(db, embeddingSvc, cfg.Sources.DevTo)
 
 	var visionSyncer *vision.FilesystemSyncer
 	var visionJobManager *vision.JobManager
@@ -155,6 +157,7 @@ func main() {
 	mux.HandleFunc("POST /api/v1/ingest/youtube", api.IngestHandler(youtubeSyncer))
 	mux.HandleFunc("POST /api/v1/ingest/onedrive", api.IngestHandler(onedriveSyncer))
 	mux.HandleFunc("POST /api/v1/ingest/thenewstack", api.IngestHandler(theNewStackSyncer))
+	mux.HandleFunc("POST /api/v1/ingest/devto", api.IngestHandler(devtoSyncer))
 	if visionJobManager != nil {
 		mux.HandleFunc("POST /api/v1/ingest/vision", api.VisionIngestHandler(visionJobManager))
 		mux.HandleFunc("GET /api/v1/ingest/vision/jobs/{id}", api.VisionJobStatusHandler(visionJobManager))
@@ -185,6 +188,7 @@ func main() {
 	mux.HandleFunc("POST /ingest/youtube", api.IngestHandler(youtubeSyncer))
 	mux.HandleFunc("POST /ingest/onedrive", api.IngestHandler(onedriveSyncer))
 	mux.HandleFunc("POST /ingest/thenewstack", api.IngestHandler(theNewStackSyncer))
+	mux.HandleFunc("POST /ingest/devto", api.IngestHandler(devtoSyncer))
 	if visionJobManager != nil {
 		mux.HandleFunc("POST /ingest/vision", api.VisionIngestHandler(visionJobManager))
 		mux.HandleFunc("GET /ingest/vision/jobs/{id}", api.VisionJobStatusHandler(visionJobManager))

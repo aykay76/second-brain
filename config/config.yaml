@@ -76,7 +76,10 @@ sources:
     enabled: false
     max_articles: 50
 
-  vision:
+  devto:
+    enabled: false
+    tags: ["golang", "distributed-systems", "ai"]
+    max_articles: 50
     enabled: true
     paths:
       - D:/media/photos/2025.05 - China

@@ -29,6 +29,7 @@ type SourcesConfig struct {
 	YouTube     YouTubeConfig     `yaml:"youtube"`
 	OneDrive    OneDriveConfig    `yaml:"onedrive"`
 	TheNewStack TheNewStackConfig `yaml:"thenewstack"`
+	DevTo       DevToConfig       `yaml:"devto"`
 	Vision      VisionConfig      `yaml:"vision"`
 }
 
@@ -85,6 +86,12 @@ type TrendingConfig struct {
 type TheNewStackConfig struct {
 	Enabled     bool `yaml:"enabled"`
 	MaxArticles int  `yaml:"max_articles"`
+}
+
+type DevToConfig struct {
+	Enabled     bool     `yaml:"enabled"`
+	Tags        []string `yaml:"tags"`
+	MaxArticles int      `yaml:"max_articles"`
 }
 
 type YouTubeConfig struct {
