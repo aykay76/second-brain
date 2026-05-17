@@ -14,6 +14,10 @@ videos — and surfaces connections between them.
   ollama pull llama3.1
   ```
 
+
+docker run --network mynet --name vllm --runtime nvidia --gpus all -p 8000:8000 --ipc=host vllm/vllm-openai:latest --model qwen/qwen3-0.6b
+docker run --network mynet --name open-webui -p 3000:8080 -e OPENAI_API_BASE_URL=http://vllm:8000/v1 --restart always ghcr.io/open-webui/open-webui:main
+
 ## Quick Start
 
 ### 1. Start PostgreSQL (with pgvector)

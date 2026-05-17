@@ -20,11 +20,13 @@ llm:
     base_url: http://localhost:11434
     embedding_model: nomic-embed-text
     chat_model: llama3.1
-    vision_model: llama3.2-vision:11b
+    vision_model: qwen3-vl:8b
+    # vision_mode: llama3.2-vision:11b
   openai:
+    base_url: http://127.0.0.1:1337/v1
     api_key: ${OPENAI_API_KEY}
     embedding_model: text-embedding-3-small
-    chat_model: gpt-4o
+    chat_model: Qwen3_6-35B-A3B-UD-Q4_K_M
   groq:
     api_key: ${GROQ_API_KEY}
     embedding_model: nomic-embed-text
