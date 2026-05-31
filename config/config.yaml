@@ -15,7 +15,7 @@ db:
   max_idle_conns: 5
 
 llm:
-  provider: ollama
+  provider: openai
   ollama:
     base_url: http://localhost:11434
     embedding_model: nomic-embed-text
@@ -27,6 +27,7 @@ llm:
     api_key: ${OPENAI_API_KEY}
     embedding_model: text-embedding-3-small
     chat_model: Qwen3_6-35B-A3B-UD-Q4_K_M
+    vision_model: Qwen3_6-35B-A3B-UD-Q4_K_M
   groq:
     api_key: ${GROQ_API_KEY}
     embedding_model: nomic-embed-text

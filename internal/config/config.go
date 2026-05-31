@@ -169,8 +169,10 @@ type OllamaConfig struct {
 
 type OpenAIConfig struct {
 	APIKey         string `yaml:"api_key"`
+	BaseURL        string `yaml:"base_url"`
 	EmbeddingModel string `yaml:"embedding_model"`
 	ChatModel      string `yaml:"chat_model"`
+	VisionModel    string `yaml:"vision_model"`
 }
 
 type GroqConfig struct {

@@ -35,12 +35,14 @@ func NewProvider(cfg config.LLMConfig) (*Provider, error) {
 			return nil, fmt.Errorf("openai api_key is required when provider is openai")
 		}
 		p := NewOpenAIProvider(
+			cfg.OpenAI.BaseURL,
 			cfg.OpenAI.APIKey,
 			cfg.OpenAI.EmbeddingModel,
 			cfg.OpenAI.ChatModel,
+			cfg.OpenAI.VisionModel,
 			dimensionOpenAI,
 		)
-		return &Provider{Embedder: p, Chat: p, Vision: nil}, nil
+		return &Provider{Embedder: p, Chat: p, Vision: p}, nil
 
 	case "groq":
 		if cfg.Groq.APIKey == "" {
