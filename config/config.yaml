@@ -15,13 +15,14 @@ db:
   max_idle_conns: 5
 
 llm:
-  provider: openai
+  provider: ollama              # Default provider for chat
+  embedding_provider: ollama    # Provider for embeddings
+  vision_provider: openai       # Provider for vision tasks
   ollama:
     base_url: http://localhost:11434
     embedding_model: nomic-embed-text
     chat_model: llama3.1
-    vision_model: qwen3-vl:8b
-    # vision_mode: llama3.2-vision:11b
+    vision_model: qwen3-vl:4b
   openai:
     base_url: http://127.0.0.1:1337/v1
     api_key: ${OPENAI_API_KEY}

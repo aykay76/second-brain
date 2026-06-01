@@ -154,10 +154,12 @@ func (c DBConfig) DSN() string {
 }
 
 type LLMConfig struct {
-	Provider string       `yaml:"provider"`
-	Ollama   OllamaConfig `yaml:"ollama"`
-	OpenAI   OpenAIConfig `yaml:"openai"`
-	Groq     GroqConfig   `yaml:"groq"`
+	Provider            string       `yaml:"provider"`              // Default provider (for backward compatibility)
+	EmbeddingProvider   string       `yaml:"embedding_provider"`    // Provider for embeddings
+	VisionProvider      string       `yaml:"vision_provider"`       // Provider for vision tasks
+	Ollama              OllamaConfig `yaml:"ollama"`
+	OpenAI              OpenAIConfig `yaml:"openai"`
+	Groq                GroqConfig   `yaml:"groq"`
 }
 
 type OllamaConfig struct {
